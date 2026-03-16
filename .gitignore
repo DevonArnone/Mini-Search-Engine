@@ -1,0 +1,17 @@
+.next
+node_modules
+.venv
+__pycache__
+.pytest_cache
+.mypy_cache
+dist
+build
+.coverage
+coverage
+playwright-report
+test-results
+.DS_Store
+*.pyc
+apps/web/.env.local
+services/crawler/.env
+

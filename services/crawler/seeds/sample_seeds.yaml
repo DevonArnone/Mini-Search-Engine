@@ -1,0 +1,12 @@
+allowed_domains:
+  - example.com
+  - developer.mozilla.org
+defaults:
+  max_depth: 2
+  rate_limit_per_domain_ms: 1000
+seeds:
+  - url: https://example.com/
+    priority: 10
+  - url: https://developer.mozilla.org/en-US/docs/Web/HTML
+    priority: 20
+
