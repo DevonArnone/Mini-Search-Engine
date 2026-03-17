@@ -1,11 +1,16 @@
+import React from "react";
 import { render, screen } from "@testing-library/react";
 
 import { SearchShell } from "@/components/search-shell";
 
+const searchParams = new URLSearchParams();
+const replace = vi.fn();
+const router = { replace };
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => router,
   usePathname: () => "/search",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParams,
 }));
 
 vi.stubGlobal(
@@ -58,4 +63,3 @@ describe("SearchShell", () => {
     expect(screen.getByText("1 results in 12ms")).toBeInTheDocument();
   });
 });
-

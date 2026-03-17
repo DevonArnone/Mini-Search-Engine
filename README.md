@@ -66,5 +66,17 @@ docker compose down -v
 - `python services/crawler/scripts/init_index.py`: configure Meilisearch index
 - `python services/crawler/scripts/load_seeds.py`: enqueue sample seeds
 - `python services/crawler/scripts/run_crawl.py`: run crawl worker
+- `python services/crawler/scripts/generate_demo_corpus.py --count 10000`: create a synthetic local corpus without adding files to the repo
 
 See [docs/architecture.md](/Users/devonarnone/Documents/Mini Search Engine/docs/architecture.md) for data flow and [docs/api-spec.md](/Users/devonarnone/Documents/Mini Search Engine/docs/api-spec.md) for the search contract.
+
+## Generate A 10k Corpus
+
+If you want a defensible `10,000+ documents` claim for local demos, generate the corpus into PostgreSQL and Meilisearch instead of committing files into Git.
+
+1. Start PostgreSQL and Meilisearch.
+2. Run `python services/crawler/scripts/init_db.py`
+3. Run `python services/crawler/scripts/init_index.py`
+4. Run `python services/crawler/scripts/generate_demo_corpus.py --count 10000`
+
+The generated data lives in local database and search index storage, not in the repository. If you are using Docker Compose, `docker compose down -v` removes the generated corpus.

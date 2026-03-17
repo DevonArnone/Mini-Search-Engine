@@ -20,3 +20,26 @@ export interface SearchResponse {
   processingTimeMs: number;
   results: SearchResult[];
 }
+
+export interface StatusDomainCount {
+  value: string;
+  count: number;
+}
+
+export interface StatusResponse {
+  mode: "live" | "demo";
+  indexedDocuments: number;
+  queuedDocuments: number;
+  crawlFailures: number;
+  analyticsEvents: number;
+  topDomains: StatusDomainCount[];
+  searchEngine: {
+    healthy: boolean;
+    indexUid: string;
+    numberOfDocuments?: number;
+  };
+  database: {
+    healthy: boolean;
+  };
+  generatedAt: string;
+}
