@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
             language: payload.language,
             tags: payload.tags,
             sort: payload.sort,
+            from: payload.from ?? null,
+            to: payload.to ?? null,
           }),
           results.totalHits,
           latency,
@@ -58,4 +60,3 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(results);
 }
-

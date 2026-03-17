@@ -34,6 +34,8 @@ export interface StatusResponse {
   queuedDocuments: number;
   crawlFailures: number;
   analyticsEvents: number;
+  duplicateDocuments: number;
+  duplicateGroups: number;
   topDomains: StatusDomainCount[];
   searchEngine: {
     healthy: boolean;

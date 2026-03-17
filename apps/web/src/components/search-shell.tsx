@@ -189,6 +189,8 @@ export function SearchShell() {
       q: state.q,
       page: state.page,
       sort: state.sort,
+      from: state.from,
+      to: state.to,
       domain: state.domain,
       language: state.language,
       tags: state.tags,
@@ -214,6 +216,8 @@ export function SearchShell() {
           tags: state.tags,
           sort: state.sort,
           page: state.page,
+          from: state.from,
+          to: state.to,
         },
         resultsCount: results.totalHits,
         latencyMs: results.processingTimeMs,
@@ -242,6 +246,8 @@ export function SearchShell() {
           tags: state.tags,
           sort: state.sort,
           page: state.page,
+          from: state.from,
+          to: state.to,
         },
         resultsCount: results.totalHits,
         latencyMs: results.processingTimeMs,
@@ -265,6 +271,8 @@ export function SearchShell() {
                 domain: [],
                 language: [],
                 tags: [],
+                from: null,
+                to: null,
                 page: 1,
               }))
             }
@@ -329,6 +337,39 @@ export function SearchShell() {
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
             </select>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="text-sm text-stone-600">
+              From
+              <input
+                className="mt-2 w-full rounded-2xl border border-orange-200 bg-sand px-4 py-3 text-ink"
+                onChange={(event) =>
+                  setState((current) => ({
+                    ...current,
+                    from: event.target.value || null,
+                    page: 1,
+                  }))
+                }
+                type="date"
+                value={state.from ?? ""}
+              />
+            </label>
+            <label className="text-sm text-stone-600">
+              To
+              <input
+                className="mt-2 w-full rounded-2xl border border-orange-200 bg-sand px-4 py-3 text-ink"
+                onChange={(event) =>
+                  setState((current) => ({
+                    ...current,
+                    to: event.target.value || null,
+                    page: 1,
+                  }))
+                }
+                type="date"
+                value={state.to ?? ""}
+              />
+            </label>
           </div>
         </div>
 

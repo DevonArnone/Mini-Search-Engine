@@ -22,9 +22,9 @@ export function StatusOverview({ status }: { status: StatusResponse }) {
       tone: "text-emerald-700",
     },
     {
-      label: "Crawl failures",
-      value: formatNumber(status.crawlFailures),
-      tone: "text-ember",
+      label: "Duplicate documents",
+      value: formatNumber(status.duplicateDocuments),
+      tone: "text-amber-700",
     },
   ];
 
@@ -83,6 +83,10 @@ export function StatusOverview({ status }: { status: StatusResponse }) {
             </div>
           )}
         </div>
+        <p className="mt-4 text-sm text-stone-500">
+          Duplicate content groups: {formatNumber(status.duplicateGroups)}. Crawl failures logged:{" "}
+          {formatNumber(status.crawlFailures)}.
+        </p>
       </article>
     </section>
   );

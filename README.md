@@ -35,6 +35,12 @@ That command:
 - loads sample seeds
 - runs the crawler once
 
+For a full synthetic corpus demo with `10,000` indexed documents:
+
+```bash
+bash scripts/local-demo-10k.sh
+```
+
 To stop and clean local state:
 
 ```bash
@@ -67,6 +73,8 @@ docker compose down -v
 - `python services/crawler/scripts/load_seeds.py`: enqueue sample seeds
 - `python services/crawler/scripts/run_crawl.py`: run crawl worker
 - `python services/crawler/scripts/generate_demo_corpus.py --count 10000`: create a synthetic local corpus without adding files to the repo
+- `bash scripts/local-demo-10k.sh`: start the web stack and seed a 10k local corpus
+- `bash scripts/benchmark-search.sh`: sample `/api/search` latency and print average and p95 timings
 
 See [docs/architecture.md](/Users/devonarnone/Documents/Mini Search Engine/docs/architecture.md) for data flow and [docs/api-spec.md](/Users/devonarnone/Documents/Mini Search Engine/docs/api-spec.md) for the search contract.
 
@@ -80,3 +88,32 @@ If you want a defensible `10,000+ documents` claim for local demos, generate the
 4. Run `python services/crawler/scripts/generate_demo_corpus.py --count 10000`
 
 The generated data lives in local database and search index storage, not in the repository. If you are using Docker Compose, `docker compose down -v` removes the generated corpus.
+
+Expected result:
+
+- `/api/status` reports roughly `10,000` indexed documents
+- the home page and search page show live corpus counts and top domains
+- `bash scripts/benchmark-search.sh` prints average and p95 search latency
+
+## Benchmarking
+
+Use the built-in benchmark script after the app and search services are running:
+
+```bash
+bash scripts/benchmark-search.sh
+```
+
+Example output shape:
+
+```text
+Benchmark query: search
+Samples: 15
+Modes observed: live
+Average latency: 12.40ms
+P95 latency: 18.00ms
+Average total hits: 10000.00
+```
+
+## Dedupe Reporting
+
+The status dashboard now reports duplicate document counts and duplicate content groups based on `content_hash`, so you can verify when the corpus contains redundant content rather than only relying on a hidden dedupe field in the database.

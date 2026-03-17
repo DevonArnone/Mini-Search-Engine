@@ -1,14 +1,32 @@
-import { Client } from "pg";
+import { Pool, type PoolClient } from "pg";
 
 import { env } from "@/lib/env";
 
-export async function withDb<T>(handler: (client: Client) => Promise<T>) {
-  const client = new Client({ connectionString: env.databaseUrl });
-  await client.connect();
+let pool: Pool | null = null;
+
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: env.databaseUrl,
+      max: 10,
+      idleTimeoutMillis: 30_000,
+    });
+  }
+  return pool;
+}
+
+export async function withDb<T>(handler: (client: PoolClient) => Promise<T>) {
+  const client = await getPool().connect();
   try {
     return await handler(client);
   } finally {
-    await client.end();
+    client.release();
   }
 }
 
+export async function closeDbPool() {
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+}

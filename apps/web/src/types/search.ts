@@ -20,7 +20,8 @@ export interface SearchState {
   language: string[];
   tags: string[];
   sort: SearchSort;
+  from: string | null;
+  to: string | null;
 }
 
 export type { SearchResponse, SearchSort };
-
