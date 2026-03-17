@@ -15,8 +15,14 @@ def load_seed_config(path: str) -> dict:
 def enqueue_seeds(path: str) -> int:
     config = load_seed_config(path)
     count = 0
+    defaults = config.get("defaults", {}) if isinstance(config, dict) else {}
+    default_priority = defaults.get("priority", 100)
     for seed in config.get("seeds", []):
-        enqueue_url(seed["url"], depth=0, source_url=None, priority=seed.get("priority", 100))
+        enqueue_url(
+            seed["url"],
+            depth=0,
+            source_url=None,
+            priority=seed.get("priority", default_priority),
+        )
         count += 1
     return count
-

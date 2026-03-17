@@ -55,3 +55,17 @@ def mark_queue_status(queue_id: int, status: str, retry_count: int | None = None
     with db_cursor() as cur:
         cur.execute(query, tuple(values))
 
+
+def schedule_queue_retry(queue_id: int, retry_count: int, delay_seconds: int) -> None:
+    with db_cursor() as cur:
+        cur.execute(
+            """
+            UPDATE crawl_queue
+            SET status = 'pending',
+                retry_count = %s,
+                scheduled_at = NOW() + %s * INTERVAL '1 second',
+                processed_at = NULL
+            WHERE id = %s
+            """,
+            (retry_count, delay_seconds, queue_id),
+        )
