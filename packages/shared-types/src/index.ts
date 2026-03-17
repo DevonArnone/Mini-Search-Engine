@@ -18,6 +18,8 @@ export interface SearchResponse {
   limit: number;
   totalHits: number;
   processingTimeMs: number;
+  mode: "live" | "demo";
+  warning?: string;
   results: SearchResult[];
 }
 

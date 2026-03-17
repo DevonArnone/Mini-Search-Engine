@@ -21,6 +21,7 @@ const defaultResults: SearchResponse = {
   limit: 10,
   totalHits: 0,
   processingTimeMs: 0,
+  mode: "live",
   results: [],
 };
 
@@ -107,6 +108,7 @@ export function SearchShell() {
   const [results, setResults] = useState<SearchResponse>(defaultResults);
   const [filters, setFilters] = useState<FiltersResponse>(defaultFilters);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const debouncedQuery = useDebounce(state.q, 250);
 
@@ -126,18 +128,45 @@ export function SearchShell() {
     });
 
     const fetchData = async () => {
-      const [searchResponse, filtersResponse, autocompleteResponse] = await Promise.all([
-        fetch(`/api/search?${searchParams.toString()}`, { signal: controller.signal }).then((res) =>
-          res.json(),
-        ),
-        fetch("/api/filters", { signal: controller.signal }).then((res) => res.json()),
-        fetch(`/api/autocomplete?q=${encodeURIComponent(debouncedQuery)}`, {
-          signal: controller.signal,
-        }).then((res) => res.json()),
-      ]);
-      setResults(searchResponse);
-      setFilters(filtersResponse);
-      setSuggestions(autocompleteResponse.suggestions ?? []);
+      try {
+        setError(null);
+        const [searchResponse, filtersResponse, autocompleteResponse] = await Promise.all([
+          fetch(`/api/search?${searchParams.toString()}`, { signal: controller.signal }).then(
+            (res) => {
+              if (!res.ok) {
+                throw new Error("Search request failed");
+              }
+              return res.json();
+            },
+          ),
+          fetch("/api/filters", { signal: controller.signal }).then((res) => {
+            if (!res.ok) {
+              throw new Error("Filter request failed");
+            }
+            return res.json();
+          }),
+          fetch(`/api/autocomplete?q=${encodeURIComponent(debouncedQuery)}`, {
+            signal: controller.signal,
+          }).then((res) => {
+            if (!res.ok) {
+              throw new Error("Autocomplete request failed");
+            }
+            return res.json();
+          }),
+        ]);
+        setResults(searchResponse);
+        setFilters(filtersResponse);
+        setSuggestions(autocompleteResponse.suggestions ?? []);
+      } catch (fetchError) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Search is temporarily unavailable.",
+        );
+      }
     };
 
     void fetchData();
@@ -230,6 +259,18 @@ export function SearchShell() {
           </p>
           {isPending ? <p>Updating…</p> : null}
         </div>
+
+        {results.mode === "demo" ? (
+          <div className="rounded-3xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+            {results.warning ?? "Demo search mode is active."}
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="rounded-3xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-950">
+            {error}
+          </div>
+        ) : null}
 
         <div className="space-y-4">
           {isPending && results.results.length === 0 ? (

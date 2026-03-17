@@ -118,6 +118,8 @@ function runDemoSearch(args: SearchArgs): SearchResponse {
     limit: args.limit,
     totalHits: filtered.length,
     processingTimeMs: 12,
+    mode: "demo",
+    warning: "Showing bundled demo results because Meilisearch is unavailable.",
     results: pageItems.map((document) => ({
       id: document.id,
       title: document.title,
@@ -151,6 +153,7 @@ export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
       limit: args.limit,
       totalHits: response.estimatedTotalHits ?? 0,
       processingTimeMs: response.processingTimeMs,
+      mode: "live",
       results: response.hits.map((hit) => {
         const formatted = hit._formatted as Record<string, string> | undefined;
         return {

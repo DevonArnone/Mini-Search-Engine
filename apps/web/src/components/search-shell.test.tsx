@@ -15,15 +15,19 @@ vi.mock("next/navigation", () => ({
 
 vi.stubGlobal(
   "fetch",
-  vi.fn(async (input: string) => {
-    if (input.startsWith("/api/search")) {
+  vi.fn(async (input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
+    if (url.startsWith("/api/search")) {
       return {
+        ok: true,
         json: async () => ({
           query: "",
           page: 1,
           limit: 10,
           totalHits: 1,
           processingTimeMs: 12,
+          mode: "live",
           results: [
             {
               id: "1",
@@ -41,11 +45,12 @@ vi.stubGlobal(
       };
     }
 
-    if (input.startsWith("/api/autocomplete")) {
-      return { json: async () => ({ suggestions: ["Sample"] }) };
+    if (url.startsWith("/api/autocomplete")) {
+      return { ok: true, json: async () => ({ suggestions: ["Sample"] }) };
     }
 
     return {
+      ok: true,
       json: async () => ({
         domains: [],
         languages: [],
