@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -26,25 +24,48 @@ services:
       - "7700:7700"
     volumes:
       - meili_data:/meili_data
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7700/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  crawler:
+  web:
     build:
-      context: ./services/crawler
-    env_file:
-      - .env.example
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://mini_search:mini_search@postgres:5432/mini_search
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: mini_search_master_key
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+      PORT: 3000
     depends_on:
       postgres:
         condition: service_healthy
       meilisearch:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  crawler-job:
+    build:
+      context: ./services/crawler
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_URL: postgresql://mini_search:mini_search@postgres:5432/mini_search
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: mini_search_master_key
+      CRAWLER_IGNORE_ROBOTS: "true"
+      SEED_CONFIG_PATH: seeds/sample_seeds.yaml
+    depends_on:
+      postgres:
         condition: service_healthy
-    command: ["python", "-m", "app.pipeline.worker"]
+      meilisearch:
+        condition: service_started
+    command:
+      [
+        "sh",
+        "-c",
+        "python scripts/init_db.py && python scripts/init_index.py && python scripts/load_seeds.py && python scripts/run_crawl.py"
+      ]
 
 volumes:
   postgres_data:
   meili_data:
-

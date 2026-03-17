@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -28,6 +28,74 @@ function toggle(values: string[], next: string) {
   return values.includes(next)
     ? values.filter((value) => value !== next)
     : [...values, next];
+}
+
+function SearchBar({
+  query,
+  suggestions,
+  setQuery,
+}: {
+  query: string;
+  suggestions: string[];
+  setQuery: (query: string) => void;
+}) {
+  const searchRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!searchRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!query.length) {
+      setIsOpen(false);
+    }
+  }, [query]);
+
+  return (
+    <div className="relative flex-1" ref={searchRef}>
+      <input
+        aria-label="Search query"
+        className="w-full rounded-2xl border border-orange-200 bg-sand px-4 py-3 text-ink outline-none ring-0 placeholder:text-stone-500"
+        onChange={(event) => {
+          const nextQuery = event.target.value;
+          setQuery(nextQuery);
+          setIsOpen(nextQuery.trim().length > 0);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            setIsOpen(false);
+          }
+        }}
+        placeholder="Search docs, blogs, and knowledge bases"
+        value={query}
+      />
+      {isOpen && suggestions.length > 0 && query.length > 0 ? (
+        <div className="absolute z-10 mt-2 w-full rounded-2xl border border-orange-100 bg-white p-2 shadow-lg">
+          {suggestions.map((suggestion) => (
+            <button
+              className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-orange-50"
+              key={suggestion}
+              onClick={() => {
+                setQuery(suggestion);
+                setIsOpen(false);
+              }}
+              type="button"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function SearchShell() {
@@ -131,33 +199,11 @@ export function SearchShell() {
       <section className="space-y-4">
         <div className="rounded-[2rem] border border-orange-200 bg-white/80 p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <input
-                aria-label="Search query"
-                className="w-full rounded-2xl border border-orange-200 bg-sand px-4 py-3 text-ink outline-none ring-0 placeholder:text-stone-500"
-                onChange={(event) =>
-                  setState((current) => ({ ...current, q: event.target.value, page: 1 }))
-                }
-                placeholder="Search docs, blogs, and knowledge bases"
-                value={state.q}
-              />
-              {suggestions.length > 0 && state.q ? (
-                <div className="absolute z-10 mt-2 w-full rounded-2xl border border-orange-100 bg-white p-2 shadow-lg">
-                  {suggestions.map((suggestion) => (
-                    <button
-                      className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-orange-50"
-                      key={suggestion}
-                      onClick={() =>
-                        setState((current) => ({ ...current, q: suggestion, page: 1 }))
-                      }
-                      type="button"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <SearchBar
+              query={state.q}
+              setQuery={(query) => setState((current) => ({ ...current, q: query, page: 1 }))}
+              suggestions={suggestions}
+            />
 
             <select
               aria-label="Sort results"

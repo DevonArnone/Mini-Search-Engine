@@ -16,7 +16,7 @@ async def process_queue_item(item) -> None:
         mark_queue_status(item.id, "skipped")
         return
 
-    if not can_fetch(item.url):
+    if not settings.crawler_ignore_robots and not can_fetch(item.url):
         log_crawl_attempt(item.url, None, None, None, "blocked by robots.txt")
         mark_queue_status(item.id, "skipped")
         return
@@ -56,4 +56,3 @@ async def run_worker() -> None:
 
 if __name__ == "__main__":
     asyncio.run(run_worker())
-

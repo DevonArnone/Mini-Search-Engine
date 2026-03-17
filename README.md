@@ -12,12 +12,34 @@ Production-style portfolio project for crawling, parsing, indexing, and searchin
 
 ## Quick Start
 
-1. Copy `.env.example` into local env files as needed.
-2. Start infrastructure with `docker compose up postgres meilisearch`.
-3. Create a Python virtualenv in `services/crawler` and install `requirements.txt`.
-4. Install frontend dependencies with `npm install`.
-5. Run the web app with `npm run dev`.
-6. Run crawler scripts from `services/crawler/scripts`.
+1. Run `bash scripts/local-demo.sh`
+2. Open `http://localhost:3000/search`
+
+For local setup, `CRAWLER_IGNORE_ROBOTS=true` is enabled in `.env.example` so the sample seeds can index immediately. Set it to `false` for stricter real crawling.
+
+## Local Docker Demo
+
+This repo supports a one-command local demo:
+
+```bash
+bash scripts/local-demo.sh
+```
+
+That command:
+
+- starts PostgreSQL
+- starts Meilisearch
+- builds and starts the Next.js web app
+- initializes the database
+- configures the Meilisearch index
+- loads sample seeds
+- runs the crawler once
+
+To stop and clean local state:
+
+```bash
+docker compose down -v
+```
 
 ## Project Structure
 
@@ -46,4 +68,3 @@ Production-style portfolio project for crawling, parsing, indexing, and searchin
 - `python services/crawler/scripts/run_crawl.py`: run crawl worker
 
 See [docs/architecture.md](/Users/devonarnone/Documents/Mini Search Engine/docs/architecture.md) for data flow and [docs/api-spec.md](/Users/devonarnone/Documents/Mini Search Engine/docs/api-spec.md) for the search contract.
-

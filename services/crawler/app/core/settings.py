@@ -4,6 +4,13 @@ import os
 from dataclasses import dataclass
 
 
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 @dataclass(slots=True)
 class Settings:
     database_url: str = os.getenv(
@@ -21,6 +28,7 @@ class Settings:
         for domain in os.getenv("CRAWLER_ALLOWED_DOMAINS", "example.com").split(",")
         if domain.strip()
     )
+    crawler_ignore_robots: bool = env_flag("CRAWLER_IGNORE_ROBOTS", True)
     seed_config_path: str = os.getenv(
         "SEED_CONFIG_PATH", "services/crawler/seeds/sample_seeds.yaml"
     )
@@ -28,4 +36,3 @@ class Settings:
 
 
 settings = Settings()
-
