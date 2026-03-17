@@ -30,42 +30,39 @@ export async function getStatus(): Promise<StatusResponse> {
   try {
     const [dbStatus, meiliStatus] = await Promise.all([
       withDb(async (client) => {
-        const [
-          { rows: documentRows },
-          { rows: queueRows },
-          { rows: logRows },
-          { rows: analyticsRows },
-          { rows: duplicateRows },
-          { rows: domainRows },
-        ] =
-          await Promise.all([
-            client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM documents"),
-            client.query<{ count: string }>(
-              "SELECT COUNT(*)::text AS count FROM crawl_queue WHERE status IN ('pending', 'processing')",
-            ),
-            client.query<{ count: string }>(
-              "SELECT COUNT(*)::text AS count FROM crawl_logs WHERE error_message IS NOT NULL OR status_code >= 400",
-            ),
-            client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM search_analytics"),
-            client.query<{ duplicate_documents: string; duplicate_groups: string }>(
-              `SELECT
-                 COALESCE(SUM(group_count) - COUNT(*), 0)::text AS duplicate_documents,
-                 COUNT(*)::text AS duplicate_groups
-               FROM (
-                 SELECT COUNT(*) AS group_count
-                 FROM documents
-                 GROUP BY content_hash
-                 HAVING COUNT(*) > 1
-               ) duplicate_groups`,
-            ),
-            client.query<{ domain: string; count: string }>(
-              `SELECT domain, COUNT(*)::text AS count
-               FROM documents
-               GROUP BY domain
-               ORDER BY COUNT(*) DESC, domain ASC
-               LIMIT 5`,
-            ),
-          ]);
+        const { rows: documentRows } = await client.query<{ count: string }>(
+          "SELECT COUNT(*)::text AS count FROM documents",
+        );
+        const { rows: queueRows } = await client.query<{ count: string }>(
+          "SELECT COUNT(*)::text AS count FROM crawl_queue WHERE status IN ('pending', 'processing')",
+        );
+        const { rows: logRows } = await client.query<{ count: string }>(
+          "SELECT COUNT(*)::text AS count FROM crawl_logs WHERE error_message IS NOT NULL OR status_code >= 400",
+        );
+        const { rows: analyticsRows } = await client.query<{ count: string }>(
+          "SELECT COUNT(*)::text AS count FROM search_analytics",
+        );
+        const { rows: duplicateRows } = await client.query<{
+          duplicate_documents: string;
+          duplicate_groups: string;
+        }>(
+          `SELECT
+             COALESCE(SUM(group_count) - COUNT(*), 0)::text AS duplicate_documents,
+             COUNT(*)::text AS duplicate_groups
+           FROM (
+             SELECT COUNT(*) AS group_count
+             FROM documents
+             GROUP BY content_hash
+             HAVING COUNT(*) > 1
+           ) duplicate_groups`,
+        );
+        const { rows: domainRows } = await client.query<{ domain: string; count: string }>(
+          `SELECT domain, COUNT(*)::text AS count
+           FROM documents
+           GROUP BY domain
+           ORDER BY COUNT(*) DESC, domain ASC
+           LIMIT 5`,
+        );
 
         return {
           healthy: true,

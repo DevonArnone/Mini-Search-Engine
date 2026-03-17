@@ -2,6 +2,8 @@
 
 Production-style portfolio project for crawling, parsing, indexing, and searching 10,000+ HTML documents with Python, PostgreSQL, Meilisearch, and Next.js.
 
+![Search workspace](docs/assets/search-ui.png)
+
 ## Stack
 
 - Next.js 15 + TypeScript + Tailwind CSS

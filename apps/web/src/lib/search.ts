@@ -186,14 +186,21 @@ export async function runAutocomplete(q: string) {
       limit: 5,
       attributesToRetrieve: ["title"],
     });
-    return response.hits
-      .map((hit) => String(hit.title ?? "").trim())
-      .filter(Boolean);
+    return Array.from(
+      new Set(
+        response.hits
+          .map((hit) => String(hit.title ?? "").trim())
+          .filter(Boolean),
+      ),
+    );
   } catch {
-    return demoDocuments
-      .map((document) => document.title)
-      .filter((title) => title.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 5);
+    return Array.from(
+      new Set(
+        demoDocuments
+          .map((document) => document.title)
+          .filter((title) => title.toLowerCase().includes(q.toLowerCase())),
+      ),
+    ).slice(0, 5);
   }
 }
 
