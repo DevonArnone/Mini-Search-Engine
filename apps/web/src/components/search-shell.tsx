@@ -31,6 +31,12 @@ function toggle(values: string[], next: string) {
     : [...values, next];
 }
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 function SearchBar({
   query,
   suggestions,
@@ -111,6 +117,7 @@ export function SearchShell() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const debouncedQuery = useDebounce(state.q, 250);
+  const lastAnalyticsKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const nextState = parseSearchState(params);
@@ -172,6 +179,78 @@ export function SearchShell() {
     void fetchData();
     return () => controller.abort();
   }, [debouncedQuery, pathname, router, state]);
+
+  useEffect(() => {
+    if (results.mode !== "live") {
+      return;
+    }
+
+    const analyticsKey = JSON.stringify({
+      q: state.q,
+      page: state.page,
+      sort: state.sort,
+      domain: state.domain,
+      language: state.language,
+      tags: state.tags,
+      totalHits: results.totalHits,
+      processingTimeMs: results.processingTimeMs,
+    });
+
+    if (lastAnalyticsKeyRef.current === analyticsKey) {
+      return;
+    }
+    lastAnalyticsKeyRef.current = analyticsKey;
+
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: state.q,
+        filters: {
+          domain: state.domain,
+          language: state.language,
+          tags: state.tags,
+          sort: state.sort,
+          page: state.page,
+        },
+        resultsCount: results.totalHits,
+        latencyMs: results.processingTimeMs,
+      }),
+    }).catch(() => {
+      // Search analytics should not disrupt the UI.
+    });
+  }, [results, state]);
+
+  function trackClick(result: SearchResponse["results"][number]) {
+    if (results.mode !== "live") {
+      return;
+    }
+
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      keepalive: true,
+      body: JSON.stringify({
+        query: state.q,
+        filters: {
+          domain: state.domain,
+          language: state.language,
+          tags: state.tags,
+          sort: state.sort,
+          page: state.page,
+        },
+        resultsCount: results.totalHits,
+        latencyMs: results.processingTimeMs,
+        clickedDocumentId: isUuid(result.id) ? result.id : null,
+      }),
+    }).catch(() => {
+      // Click analytics should not block navigation.
+    });
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -283,7 +362,11 @@ export function SearchShell() {
               >
                 <p className="mb-2 text-xs uppercase tracking-[0.2em] text-ocean">{result.domain}</p>
                 <h3 className="font-display text-xl font-semibold text-ink">{result.title}</h3>
-                <a className="mt-1 block break-all text-sm text-ember" href={result.url}>
+                <a
+                  className="mt-1 block break-all text-sm text-ember"
+                  href={result.url}
+                  onClick={() => trackClick(result)}
+                >
                   {result.url}
                 </a>
                 <p
