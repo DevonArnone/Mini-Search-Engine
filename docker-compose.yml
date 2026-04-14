@@ -53,7 +53,7 @@ services:
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: mini_search_master_key
       CRAWLER_IGNORE_ROBOTS: "true"
-      SEED_CONFIG_PATH: seeds/sample_seeds.yaml
+      SEED_CONFIG_PATH: seeds/docs_sources.yaml
     depends_on:
       postgres:
         condition: service_healthy

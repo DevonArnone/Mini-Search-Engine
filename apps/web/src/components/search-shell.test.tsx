@@ -13,10 +13,35 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParams,
 }));
 
+const DEMO_RESULT = {
+  id: "1",
+  title: "useState – React Reference",
+  url: "https://react.dev/reference/react/useState",
+  domain: "react.dev",
+  sourceSlug: "react",
+  sourceName: "React Docs",
+  contentType: "reference",
+  sectionPath: "Reference > React > Hooks",
+  snippet: "useState lets you add state to a function component",
+  highlights: [],
+  publishedAt: null,
+  lastUpdatedAt: null,
+  language: "en",
+  tags: ["hooks"],
+  codeBlockCount: 4,
+  freshnessStatus: "fresh",
+  whyMatched: ["title"],
+};
+
 vi.stubGlobal(
   "fetch",
   vi.fn(async (input: RequestInfo | URL) => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
 
     if (url.startsWith("/api/search")) {
       return {
@@ -28,30 +53,21 @@ vi.stubGlobal(
           totalHits: 1,
           processingTimeMs: 12,
           mode: "live",
-          results: [
-            {
-              id: "1",
-              title: "Sample",
-              url: "https://example.com",
-              domain: "example.com",
-              snippet: "hello world",
-              highlights: [],
-              publishedAt: null,
-              language: "en",
-              tags: ["docs"],
-            },
-          ],
+          results: [DEMO_RESULT],
         }),
       };
     }
 
     if (url.startsWith("/api/autocomplete")) {
-      return { ok: true, json: async () => ({ suggestions: ["Sample"] }) };
+      return { ok: true, json: async () => ({ suggestions: ["useState hook"] }) };
     }
 
+    // /api/filters
     return {
       ok: true,
       json: async () => ({
+        sources: [{ value: "react", count: 1 }],
+        contentTypes: [{ value: "reference", count: 1 }],
         domains: [],
         languages: [],
         tags: [],
@@ -64,7 +80,18 @@ vi.stubGlobal(
 describe("SearchShell", () => {
   it("renders search results from the API", async () => {
     render(<SearchShell />);
-    expect(await screen.findByText("Sample")).toBeInTheDocument();
-    expect(screen.getByText("1 results in 12ms")).toBeInTheDocument();
+    expect(await screen.findByText("useState – React Reference")).toBeInTheDocument();
+    expect(screen.getByText("1 result in 12ms")).toBeInTheDocument();
+  });
+
+  it("shows source badge and content type", async () => {
+    render(<SearchShell />);
+    expect(await screen.findByText("React")).toBeInTheDocument();
+    expect(screen.getByText("Reference")).toBeInTheDocument();
+  });
+
+  it("shows code example count", async () => {
+    render(<SearchShell />);
+    expect(await screen.findByText(/4 code examples/)).toBeInTheDocument();
   });
 });

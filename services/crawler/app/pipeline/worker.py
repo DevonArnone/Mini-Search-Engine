@@ -19,6 +19,20 @@ from app.pipeline.storage import log_crawl_attempt, upsert_document
 _domain_lock = asyncio.Lock()
 _next_allowed_fetch_at: dict[str, float] = {}
 
+# Source registry cache: slug -> {name, authority_weight}
+_source_registry: dict[str, dict] = {}
+
+
+def register_sources(sources: list[dict]) -> None:
+    """Populate the in-memory source registry before the worker runs."""
+    for source in sources:
+        slug = source.get("slug", "")
+        if slug:
+            _source_registry[slug] = {
+                "name": source.get("name", slug),
+                "authority_weight": float(source.get("authority_weight", 5)),
+            }
+
 
 def compute_retry_delay_seconds(retry_count: int) -> int:
     return min(300, 5 * (2 ** max(0, retry_count - 1)))
@@ -69,6 +83,12 @@ async def process_queue_item(item) -> None:
         mark_queue_status(item.id, "skipped")
         return
 
+    # Resolve source metadata for this item
+    source_slug = item.source_slug
+    source_info = _source_registry.get(source_slug, {}) if source_slug else {}
+    source_name = source_info.get("name")
+    authority_score = source_info.get("authority_weight", 0)
+
     try:
         await wait_for_domain_slot(item.domain)
         result = await fetch_html(item.url)
@@ -87,12 +107,28 @@ async def process_queue_item(item) -> None:
             mark_queue_status(item.id, "skipped")
             return
 
-        parsed = parse_html(result.url, result.body)
-        indexed_document = upsert_document(result.url, parsed, item.depth)
+        parsed = parse_html(result.url, result.body, source_slug=source_slug)
+        indexed_document = upsert_document(
+            result.url,
+            parsed,
+            item.depth,
+            source_slug=source_slug,
+            source_name=source_name,
+            authority_score=authority_score,
+        )
         batch_index([indexed_document])
+
         for link in parsed.links[:50]:
-            if any(link.startswith(f"http://{domain}") or link.startswith(f"https://{domain}") for domain in settings.crawler_allowed_domains):
-                enqueue_url(link, depth=item.depth + 1, source_url=result.url)
+            if any(
+                link.startswith(f"http://{domain}") or link.startswith(f"https://{domain}")
+                for domain in settings.crawler_allowed_domains
+            ):
+                enqueue_url(
+                    link,
+                    depth=item.depth + 1,
+                    source_url=result.url,
+                    source_slug=source_slug,  # inherit source from parent
+                )
         mark_queue_status(item.id, "done")
     except Exception as exc:
         log_crawl_attempt(item.url, None, None, None, str(exc))

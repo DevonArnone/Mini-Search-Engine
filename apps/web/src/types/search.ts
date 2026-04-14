@@ -1,27 +1,23 @@
-import type { SearchResponse, SearchSort } from "@mini-search/shared-types";
-
-export interface FilterOption {
-  value: string;
-  count: number;
-}
-
-export interface FiltersResponse {
-  domains: FilterOption[];
-  languages: FilterOption[];
-  tags: FilterOption[];
-  dateBuckets: FilterOption[];
-}
+import type {
+  ContentType,
+  FiltersResponse,
+  SearchResponse,
+  SearchSort,
+} from "@mini-search/shared-types";
 
 export interface SearchState {
   q: string;
   page: number;
   limit: number;
+  source: string[];
+  contentType: ContentType[];
   domain: string[];
   language: string[];
   tags: string[];
   sort: SearchSort;
   from: string | null;
   to: string | null;
+  updatedWithin: string | null; // "7d" | "30d" | "90d" | null
 }
 
-export type { SearchResponse, SearchSort };
+export type { ContentType, FiltersResponse, SearchResponse, SearchSort };

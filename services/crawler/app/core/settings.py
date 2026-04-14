@@ -60,7 +60,7 @@ def resolve_runtime_crawler_config(seed_config_path: str) -> dict[str, object]:
     }
 
 
-SEED_CONFIG_PATH = os.getenv("SEED_CONFIG_PATH", "services/crawler/seeds/sample_seeds.yaml")
+SEED_CONFIG_PATH = os.getenv("SEED_CONFIG_PATH", "services/crawler/seeds/docs_sources.yaml")
 RUNTIME_CRAWLER_CONFIG = resolve_runtime_crawler_config(SEED_CONFIG_PATH)
 
 

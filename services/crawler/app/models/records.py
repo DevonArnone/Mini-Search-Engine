@@ -14,4 +14,4 @@ class QueueItem:
     status: str
     priority: int
     retry_count: int
-
+    source_slug: str | None = None

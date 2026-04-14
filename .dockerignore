@@ -1,0 +1,16 @@
+.git
+.next
+node_modules
+.venv
+coverage
+dist
+build
+playwright-report
+test-results
+apps/web/.next
+apps/web/node_modules
+services/crawler/__pycache__
+services/crawler/.pytest_cache
+services/crawler/.mypy_cache
+services/crawler/.venv
+

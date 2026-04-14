@@ -7,17 +7,23 @@ from app.models.records import QueueItem
 from app.utils.url import extract_domain, normalize_url
 
 
-def enqueue_url(url: str, depth: int = 0, source_url: str | None = None, priority: int = 100) -> None:
+def enqueue_url(
+    url: str,
+    depth: int = 0,
+    source_url: str | None = None,
+    priority: int = 100,
+    source_slug: str | None = None,
+) -> None:
     normalized_url = normalize_url(url)
     domain = extract_domain(normalized_url)
     with db_cursor() as cur:
         cur.execute(
             """
-            INSERT INTO crawl_queue (url, normalized_url, domain, depth, source_url, priority)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO crawl_queue (url, normalized_url, domain, depth, source_url, priority, source_slug)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (normalized_url) DO NOTHING
             """,
-            (url, normalized_url, domain, depth, source_url, priority),
+            (url, normalized_url, domain, depth, source_url, priority, source_slug),
         )
 
 
@@ -36,7 +42,8 @@ def dequeue_batch(limit: int = 10) -> list[QueueItem]:
             UPDATE crawl_queue
             SET status = 'processing'
             WHERE id IN (SELECT id FROM next_items)
-            RETURNING id, url, normalized_url, domain, depth, source_url, status, priority, retry_count
+            RETURNING id, url, normalized_url, domain, depth, source_url, status,
+                      priority, retry_count, source_slug
             """,
             (limit,),
         )

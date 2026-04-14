@@ -1,0 +1,137 @@
+# Developer Documentation Source Registry
+# Each source defines a curated official documentation site to crawl and index.
+#
+# Fields per source:
+#   slug              - unique identifier used as a stable key throughout the system
+#   name              - human-readable display name
+#   description       - one-line summary shown in the browse UI
+#   home_url          - canonical landing URL for this source's docs
+#   authority_weight  - 1-10 score used in ranking (higher = more authoritative)
+#   allowed_domains   - domains the crawler is permitted to follow links into
+#   max_depth         - max BFS depth from seed URLs
+#   rate_limit_per_domain_ms - politeness delay between requests to the same domain
+#   crawl_cadence_hours      - how often a full re-crawl should be scheduled
+#   sitemaps          - optional sitemap URLs for more complete seed discovery
+#   seeds             - explicit seed URLs (priority: lower = crawled first)
+
+sources:
+
+  - slug: mdn
+    name: MDN Web Docs
+    description: The definitive web platform reference — HTML, CSS, JavaScript, and browser APIs maintained by Mozilla.
+    home_url: https://developer.mozilla.org/en-US/docs/Web
+    authority_weight: 10
+    allowed_domains:
+      - developer.mozilla.org
+    max_depth: 3
+    rate_limit_per_domain_ms: 1000
+    crawl_cadence_hours: 168
+    sitemaps:
+      - https://developer.mozilla.org/sitemap.xml
+    seeds:
+      - url: https://developer.mozilla.org/en-US/docs/Web/HTML
+        priority: 10
+      - url: https://developer.mozilla.org/en-US/docs/Web/CSS
+        priority: 10
+      - url: https://developer.mozilla.org/en-US/docs/Web/JavaScript
+        priority: 10
+      - url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference
+        priority: 12
+      - url: https://developer.mozilla.org/en-US/docs/Web/API
+        priority: 14
+      - url: https://developer.mozilla.org/en-US/docs/Learn
+        priority: 20
+
+  - slug: react
+    name: React Docs
+    description: Official React documentation — hooks, components, and patterns for the library powering millions of UIs.
+    home_url: https://react.dev/learn
+    authority_weight: 9
+    allowed_domains:
+      - react.dev
+    max_depth: 3
+    rate_limit_per_domain_ms: 1000
+    crawl_cadence_hours: 168
+    sitemaps:
+      - https://react.dev/sitemap.xml
+    seeds:
+      - url: https://react.dev/learn
+        priority: 10
+      - url: https://react.dev/reference/react
+        priority: 10
+      - url: https://react.dev/reference/react-dom
+        priority: 12
+      - url: https://react.dev/reference/react/hooks
+        priority: 14
+
+  - slug: nextjs
+    name: Next.js Docs
+    description: Full-stack React framework documentation — App Router, Server Components, routing, and deployment.
+    home_url: https://nextjs.org/docs
+    authority_weight: 9
+    allowed_domains:
+      - nextjs.org
+    max_depth: 3
+    rate_limit_per_domain_ms: 1000
+    crawl_cadence_hours: 168
+    sitemaps:
+      - https://nextjs.org/sitemap.xml
+    seeds:
+      - url: https://nextjs.org/docs
+        priority: 10
+      - url: https://nextjs.org/docs/app
+        priority: 10
+      - url: https://nextjs.org/docs/app/api-reference
+        priority: 12
+      - url: https://nextjs.org/docs/app/building-your-application
+        priority: 14
+
+  - slug: typescript
+    name: TypeScript Handbook
+    description: The official TypeScript handbook and language reference — types, generics, utilities, and the compiler.
+    home_url: https://www.typescriptlang.org/docs/
+    authority_weight: 9
+    allowed_domains:
+      - www.typescriptlang.org
+    max_depth: 3
+    rate_limit_per_domain_ms: 1000
+    crawl_cadence_hours: 336
+    seeds:
+      - url: https://www.typescriptlang.org/docs/
+        priority: 10
+      - url: https://www.typescriptlang.org/docs/handbook/intro.html
+        priority: 10
+      - url: https://www.typescriptlang.org/docs/handbook/2/types-from-types.html
+        priority: 12
+      - url: https://www.typescriptlang.org/docs/handbook/utility-types.html
+        priority: 14
+      - url: https://www.typescriptlang.org/docs/handbook/declaration-files/introduction.html
+        priority: 16
+
+  - slug: postgresql
+    name: PostgreSQL Docs
+    description: Official PostgreSQL documentation — SQL language reference, built-in functions, and administration guides.
+    home_url: https://www.postgresql.org/docs/current/
+    authority_weight: 8
+    allowed_domains:
+      - www.postgresql.org
+    max_depth: 3
+    rate_limit_per_domain_ms: 1000
+    crawl_cadence_hours: 720
+    seeds:
+      - url: https://www.postgresql.org/docs/current/index.html
+        priority: 10
+      - url: https://www.postgresql.org/docs/current/sql.html
+        priority: 10
+      - url: https://www.postgresql.org/docs/current/functions.html
+        priority: 10
+      - url: https://www.postgresql.org/docs/current/datatype.html
+        priority: 12
+      - url: https://www.postgresql.org/docs/current/queries.html
+        priority: 12
+      - url: https://www.postgresql.org/docs/current/performance-tips.html
+        priority: 14
+
+defaults:
+  max_depth: 3
+  rate_limit_per_domain_ms: 1000

@@ -19,7 +19,7 @@ describe("GET /api/search", () => {
     query.mockReset();
   });
 
-  it("passes filters and date params through to the search layer", async () => {
+  it("passes all filter params to the search layer", async () => {
     runSearch.mockResolvedValue({
       query: "search",
       page: 2,
@@ -33,7 +33,15 @@ describe("GET /api/search", () => {
 
     const { GET } = await import("./route");
     const request = new NextRequest(
-      "http://localhost:3000/api/search?q=search&page=2&limit=20&domain=docs.example.test&language=en&tags=ranking&sort=newest&from=2025-01-01&to=2025-12-31",
+      "http://localhost:3000/api/search?q=search&page=2&limit=20" +
+        "&source=mdn&source=react" +
+        "&contentType=reference" +
+        "&domain=docs.example.test" +
+        "&language=en" +
+        "&tags=ranking" +
+        "&sort=newest" +
+        "&from=2025-01-01&to=2025-12-31" +
+        "&updatedWithin=30d",
     );
 
     const response = await GET(request);
@@ -42,12 +50,15 @@ describe("GET /api/search", () => {
       q: "search",
       page: 2,
       limit: 20,
+      source: ["mdn", "react"],
+      contentType: ["reference"],
       domain: ["docs.example.test"],
       language: ["en"],
       tags: ["ranking"],
       sort: "newest",
       from: "2025-01-01",
       to: "2025-12-31",
+      updatedWithin: "30d",
     });
     expect(await response.json()).toMatchObject({
       query: "search",
@@ -55,5 +66,30 @@ describe("GET /api/search", () => {
       totalHits: 42,
     });
     expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("defaults source and contentType to empty arrays when not provided", async () => {
+    runSearch.mockResolvedValue({
+      query: "",
+      page: 1,
+      limit: 10,
+      totalHits: 0,
+      processingTimeMs: 5,
+      mode: "live",
+      results: [],
+    });
+    query.mockResolvedValue({ rows: [] });
+
+    const { GET } = await import("./route");
+    const request = new NextRequest("http://localhost:3000/api/search");
+    await GET(request);
+
+    expect(runSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: [],
+        contentType: [],
+        updatedWithin: undefined,
+      }),
+    );
   });
 });
