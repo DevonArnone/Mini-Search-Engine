@@ -90,7 +90,7 @@ def configure_index() -> None:
     ])
 
     # Facets used by the filters panel
-    index.update_faceting({"maxValuesPerFacet": 50})
+    index.update_faceting_settings({"maxValuesPerFacet": 50})
 
 
 def batch_index(documents: list[dict[str, Any]]) -> None:

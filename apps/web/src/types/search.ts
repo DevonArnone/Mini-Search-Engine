@@ -1,6 +1,7 @@
 import type {
   ContentType,
   FiltersResponse,
+  SearchResult,
   SearchResponse,
   SearchSort,
 } from "@mini-search/shared-types";
@@ -20,4 +21,4 @@ export interface SearchState {
   updatedWithin: string | null; // "7d" | "30d" | "90d" | null
 }
 
-export type { ContentType, FiltersResponse, SearchResponse, SearchSort };
+export type { ContentType, FiltersResponse, SearchResponse, SearchResult, SearchSort };

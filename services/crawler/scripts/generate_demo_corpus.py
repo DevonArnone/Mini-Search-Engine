@@ -172,6 +172,28 @@ def seed_demo_corpus(count: int, start_at: int, batch_size: int) -> None:
                     """,
                     document_rows,
                 )
+
+                urls = [row[1] for row in document_rows]
+                cur.execute(
+                    """
+                    SELECT id, url
+                    FROM documents
+                    WHERE url = ANY(%s)
+                    """,
+                    (urls,),
+                )
+                url_to_id = {row["url"]: str(row["id"]) for row in cur.fetchall()}
+
+                resolved_content_rows = []
+                resolved_index_documents = []
+                for document_row, content_row, index_document in zip(
+                    document_rows, content_rows, index_documents, strict=True
+                ):
+                    url = document_row[1]
+                    document_id = url_to_id[url]
+                    resolved_content_rows.append((document_id, *content_row[1:]))
+                    resolved_index_documents.append({**index_document, "id": document_id})
+
                 cur.executemany(
                     """
                     INSERT INTO document_content (
@@ -185,10 +207,10 @@ def seed_demo_corpus(count: int, start_at: int, batch_size: int) -> None:
                         links = EXCLUDED.links,
                         schema_json = EXCLUDED.schema_json
                     """,
-                    content_rows,
+                    resolved_content_rows,
                 )
                 conn.commit()
-                batch_index(index_documents)
+                batch_index(resolved_index_documents)
 
 
 def parse_args() -> argparse.Namespace:

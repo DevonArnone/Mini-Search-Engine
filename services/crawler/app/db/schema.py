@@ -100,10 +100,7 @@ CREATE TABLE IF NOT EXISTS search_analytics (
 -- Indexes -----------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_documents_domain ON documents(domain);
 CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
-CREATE INDEX IF NOT EXISTS idx_documents_source_slug ON documents(source_slug);
-CREATE INDEX IF NOT EXISTS idx_documents_content_type ON documents(content_type);
 CREATE INDEX IF NOT EXISTS idx_crawl_queue_status_priority ON crawl_queue(status, priority, scheduled_at);
-CREATE INDEX IF NOT EXISTS idx_crawl_queue_source_slug ON crawl_queue(source_slug);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_query ON search_analytics(query);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_created_at ON search_analytics(created_at);
 """

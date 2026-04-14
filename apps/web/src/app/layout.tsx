@@ -11,7 +11,9 @@ export const metadata: Metadata = {
     "Search across MDN, React, Next.js, TypeScript, and PostgreSQL official documentation in one place. Built on a real crawl/index/search stack.",
 };
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+type NavHref = "/" | "/search" | "/sources" | "/insights";
+
+function NavLink({ href, children }: { href: NavHref; children: React.ReactNode }) {
   return (
     <Link
       className="text-sm text-stone-600 transition-colors hover:text-ink"
