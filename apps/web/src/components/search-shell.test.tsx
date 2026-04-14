@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import { SearchShell } from "@/components/search-shell";
 
@@ -86,8 +86,9 @@ describe("SearchShell", () => {
 
   it("shows source badge and content type", async () => {
     render(<SearchShell />);
-    expect(await screen.findByText("React")).toBeInTheDocument();
-    expect(screen.getByText("Reference")).toBeInTheDocument();
+    const card = await screen.findByRole("article");
+    expect(within(card).getByText("React")).toBeInTheDocument();
+    expect(within(card).getByText("Reference")).toBeInTheDocument();
   });
 
   it("shows code example count", async () => {
