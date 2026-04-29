@@ -3,13 +3,16 @@
 A **developer documentation search product** built on a production-grade crawl, index, and ranking stack. Searches across MDN Web Docs, React, Next.js, TypeScript, and PostgreSQL official documentation — in one place, instantly.
 
 ## Document Landing Page View
-![Document landing page](docs/assets/doc-landing.png)
+![Document landing page](docs/assets/home-view.png)
 
 ## Document Suggestion View
-![Document suggestion view](docs/assets/doc-suggestion.png)
+![Document suggestion view](docs/assets/search-view.png)
 
 ## Document Retrieval View
-![Document retrieval view](docs/assets/doc-retrieval.png)
+![Document retrieval view](docs/assets/search-page-view.png)
+
+## Document Source View
+![Document source view](docs/assets/docs-view.png)
 
 ## Document Insight View
 ![Document insight view](docs/assets/doc-insights.png)
