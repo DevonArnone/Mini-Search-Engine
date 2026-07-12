@@ -42,6 +42,34 @@ jobs:
         run: npm test
         working-directory: apps/web
 
+      - name: Production build
+        run: npm run build
+        working-directory: apps/web
+
+  web-e2e:
+    name: Web (browser + accessibility)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - name: Browser and accessibility tests
+        run: npm run test:e2e
+        working-directory: apps/web
+
   # ---------------------------------------------------------------------------
   # Shared types — type-check
   # ---------------------------------------------------------------------------
@@ -236,14 +264,13 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install crawler deps
         run: pip install -r services/crawler/requirements.txt
 
       - name: Install web deps
         run: npm ci
-        working-directory: apps/web
 
       - name: Init DB and index
         run: |

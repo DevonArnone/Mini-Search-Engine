@@ -26,7 +26,7 @@ export interface SearchArgs {
 }
 
 // ---------------------------------------------------------------------------
-// Demo fallback data (shown when Meilisearch is unavailable)
+// Bundled data used only when SEARCH_DEMO_MODE=true.
 // ---------------------------------------------------------------------------
 
 const demoDocuments = [
