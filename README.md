@@ -4,7 +4,9 @@ A developer documentation search workbench backed by a real crawler, PostgreSQL 
 
 DevDocs Search unifies official MDN, React, Next.js, TypeScript, and PostgreSQL documentation in one ranked and filterable interface. The product is designed to be useful as a search tool while keeping its retrieval and ingestion architecture inspectable.
 
-![DevDocs Search home](docs/assets/home-view.png)
+![DevDocs Search home showing 387 indexed documents across five sources](docs/assets/home-view.png)
+
+*Live production capture: 387 official documents indexed across five healthy sources.*
 
 ## Product
 
@@ -18,19 +20,27 @@ DevDocs Search unifies official MDN, React, Next.js, TypeScript, and PostgreSQL 
 
 ### Search results
 
-![Search result workspace](docs/assets/search-page-view.png)
+![Search results for useState with live source and content-type facets](docs/assets/search-page-view.png)
+
+*Ranked `useState` results with highlighted matches, provenance, freshness, and code-example counts.*
 
 ### Filtered retrieval
 
-![Filtered Next.js search](docs/assets/search-view.png)
+![PostgreSQL reference search with source and content-type filters active](docs/assets/search-view.png)
+
+*Shareable PostgreSQL and reference filters applied to an `indexes` query.*
 
 ### Source registry
 
-![Documentation sources](docs/assets/docs-view.png)
+![Healthy source registry totaling 387 indexed documents](docs/assets/docs-view.png)
+
+*Live crawl health and coverage for MDN, React, Next.js, TypeScript, and PostgreSQL.*
 
 ### Quality dashboard
 
-![Search insights](docs/assets/doc-insights.png)
+![Live search quality metrics and service health dashboard](docs/assets/doc-insights.png)
+
+*Query volume, result quality, latency, and operational health in one dashboard.*
 
 ## Architecture
 
