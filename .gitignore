@@ -12,6 +12,6 @@ playwright-report
 test-results
 .DS_Store
 *.pyc
+*.tsbuildinfo
 apps/web/.env.local
 services/crawler/.env
-
