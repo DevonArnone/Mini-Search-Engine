@@ -6,6 +6,8 @@ import { SourceMark } from "@/components/source-mark";
 import { SOURCE_DEFINITIONS } from "@/lib/sources";
 import { getStatus } from "@/lib/status";
 
+export const dynamic = "force-dynamic";
+
 const SAMPLE_QUERIES = ["useState cleanup", "CSS subgrid", "TypeScript generics", "PostgreSQL indexes"];
 
 function formatNumber(value: number) {

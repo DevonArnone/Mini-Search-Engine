@@ -9,6 +9,8 @@ import { SOURCE_BY_SLUG } from "@/lib/sources";
 import { getInsights } from "@/lib/insights";
 import { getStatus } from "@/lib/status";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Insights", description: "Search quality and system health signals for DevDocs Search." };
 
 function QueryTable({ title, description, rows }: { title: string; description: string; rows: InsightsResponse["topQueries"] }) {

@@ -6,6 +6,8 @@ import { SourceMark } from "@/components/source-mark";
 import { SOURCE_BY_SLUG } from "@/lib/sources";
 import { getSources } from "@/lib/sources-service";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Sources",
   description: "Browse the official documentation sources indexed by DevDocs Search.",
