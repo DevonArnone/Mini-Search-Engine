@@ -32,8 +32,7 @@ function mapRows(rows: QueryRow[]) {
 export async function getInsights(): Promise<InsightsResponse> {
   try {
     return await withDb(async (client) => {
-      const [totalsResult, topQueriesResult, zeroResultResult, lowClickResult, topSourcesResult] = await Promise.all([
-        client.query<{
+      const totalsResult = await client.query<{
           total_searches: string;
           unique_queries: string;
           avg_latency_ms: string;
@@ -41,8 +40,8 @@ export async function getInsights(): Promise<InsightsResponse> {
           p95_latency_ms: string;
           zero_result_searches: string;
           clicked_searches: string;
-        }>(
-          `WITH searches AS (
+      }>(
+        `WITH searches AS (
              SELECT * FROM search_analytics
              WHERE event_type = 'search' AND created_at >= NOW() - INTERVAL '30 days'
            ), clicked AS (
@@ -57,24 +56,24 @@ export async function getInsights(): Promise<InsightsResponse> {
                   COUNT(*) FILTER (WHERE results_count = 0)::text AS zero_result_searches,
                   COUNT(clicked.search_id)::text AS clicked_searches
            FROM searches LEFT JOIN clicked USING (search_id)`,
-        ),
-        client.query<QueryRow>(
-          `SELECT query, COUNT(*)::text AS cnt, AVG(results_count)::text AS avg_results,
+      );
+      const topQueriesResult = await client.query<QueryRow>(
+        `SELECT query, COUNT(*)::text AS cnt, AVG(results_count)::text AS avg_results,
                   AVG(latency_ms)::text AS avg_latency_ms
            FROM search_analytics
            WHERE event_type = 'search' AND created_at >= NOW() - INTERVAL '30 days' AND query <> ''
            GROUP BY query ORDER BY COUNT(*) DESC, query ASC LIMIT 10`,
-        ),
-        client.query<QueryRow>(
-          `SELECT query, COUNT(*)::text AS cnt, AVG(results_count)::text AS avg_results,
+      );
+      const zeroResultResult = await client.query<QueryRow>(
+        `SELECT query, COUNT(*)::text AS cnt, AVG(results_count)::text AS avg_results,
                   AVG(latency_ms)::text AS avg_latency_ms
            FROM search_analytics
            WHERE event_type = 'search' AND created_at >= NOW() - INTERVAL '30 days'
              AND results_count = 0 AND query <> ''
            GROUP BY query ORDER BY COUNT(*) DESC, query ASC LIMIT 10`,
-        ),
-        client.query<QueryRow>(
-          `WITH searches AS (
+      );
+      const lowClickResult = await client.query<QueryRow>(
+        `WITH searches AS (
              SELECT * FROM search_analytics
              WHERE event_type = 'search' AND created_at >= NOW() - INTERVAL '30 days'
                AND query <> '' AND results_count > 0
@@ -89,17 +88,16 @@ export async function getInsights(): Promise<InsightsResponse> {
            GROUP BY searches.query
            HAVING COUNT(*) >= 3 AND AVG(CASE WHEN clicked.search_id IS NULL THEN 0 ELSE 1 END) < 0.2
            ORDER BY COUNT(*) DESC, searches.query ASC LIMIT 10`,
-        ),
-        client.query<{ value: string; count: string }>(
-          `SELECT documents.source_slug AS value, COUNT(*)::text AS count
+      );
+      const topSourcesResult = await client.query<{ value: string; count: string }>(
+        `SELECT documents.source_slug AS value, COUNT(*)::text AS count
            FROM search_analytics
            JOIN documents ON documents.id = search_analytics.clicked_document_id
            WHERE search_analytics.event_type = 'result_click'
              AND search_analytics.created_at >= NOW() - INTERVAL '30 days'
              AND documents.source_slug IS NOT NULL
            GROUP BY documents.source_slug ORDER BY COUNT(*) DESC LIMIT 10`,
-        ),
-      ]);
+      );
 
       const totals = totalsResult.rows[0];
       const totalSearches = Number(totals?.total_searches ?? 0);

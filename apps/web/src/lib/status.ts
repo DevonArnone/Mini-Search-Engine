@@ -18,31 +18,42 @@ interface DatabaseStatus {
 
 async function getDatabaseStatus(): Promise<DatabaseStatus> {
   return withDb(async (client) => {
-    const [documents, queue, failures, analytics, duplicates, domains, sources] = await Promise.all([
-      client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM documents WHERE status = 'indexed'"),
-      client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM crawl_queue WHERE status IN ('pending', 'processing')"),
-      client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM crawl_logs WHERE error_message IS NOT NULL OR status_code >= 400"),
-      client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM search_analytics WHERE event_type = 'search'"),
-      client.query<{ duplicate_documents: string; duplicate_groups: string }>(
-        `SELECT COALESCE(SUM(group_count) - COUNT(*), 0)::text AS duplicate_documents,
-                COUNT(*)::text AS duplicate_groups
-         FROM (SELECT COUNT(*) AS group_count FROM documents GROUP BY content_hash HAVING COUNT(*) > 1) grouped`,
-      ),
-      client.query<{ domain: string; count: string }>("SELECT domain, COUNT(*)::text AS count FROM documents GROUP BY domain ORDER BY COUNT(*) DESC, domain ASC LIMIT 5"),
-      client.query<{
+    const documents = await client.query<{ count: string }>(
+      "SELECT COUNT(*)::text AS count FROM documents WHERE status = 'indexed'",
+    );
+    const queue = await client.query<{ count: string }>(
+      "SELECT COUNT(*)::text AS count FROM crawl_queue WHERE status IN ('pending', 'processing')",
+    );
+    const failures = await client.query<{ count: string }>(
+      "SELECT COUNT(*)::text AS count FROM crawl_logs WHERE error_message IS NOT NULL OR status_code >= 400",
+    );
+    const analytics = await client.query<{ count: string }>(
+      "SELECT COUNT(*)::text AS count FROM search_analytics WHERE event_type = 'search'",
+    );
+    const duplicates = await client.query<{
+      duplicate_documents: string;
+      duplicate_groups: string;
+    }>(
+      `SELECT COALESCE(SUM(group_count) - COUNT(*), 0)::text AS duplicate_documents,
+              COUNT(*)::text AS duplicate_groups
+       FROM (SELECT COUNT(*) AS group_count FROM documents GROUP BY content_hash HAVING COUNT(*) > 1) grouped`,
+    );
+    const domains = await client.query<{ domain: string; count: string }>(
+      "SELECT domain, COUNT(*)::text AS count FROM documents GROUP BY domain ORDER BY COUNT(*) DESC, domain ASC LIMIT 5",
+    );
+    const sources = await client.query<{
         slug: string; name: string; description: string | null; home_url: string;
         authority_weight: number; crawl_cadence_hours: number; last_crawled_at: string | null;
         doc_count: string; crawl_status: string;
-      }>(
-        `SELECT sr.slug, sr.name, sr.description, sr.home_url, sr.authority_weight,
-                sr.crawl_cadence_hours, COALESCE(sr.last_successful_crawl_at, sr.last_crawled_at) AS last_crawled_at, sr.crawl_status,
-                COALESCE(counts.doc_count, 0)::text AS doc_count
-         FROM source_registry sr
-         LEFT JOIN (SELECT source_slug, COUNT(*) AS doc_count FROM documents WHERE source_slug IS NOT NULL AND status = 'indexed' GROUP BY source_slug) counts
-           ON counts.source_slug = sr.slug
-         ORDER BY sr.authority_weight DESC`,
-      ),
-    ]);
+    }>(
+      `SELECT sr.slug, sr.name, sr.description, sr.home_url, sr.authority_weight,
+              sr.crawl_cadence_hours, COALESCE(sr.last_successful_crawl_at, sr.last_crawled_at) AS last_crawled_at, sr.crawl_status,
+              COALESCE(counts.doc_count, 0)::text AS doc_count
+       FROM source_registry sr
+       LEFT JOIN (SELECT source_slug, COUNT(*) AS doc_count FROM documents WHERE source_slug IS NOT NULL AND status = 'indexed' GROUP BY source_slug) counts
+         ON counts.source_slug = sr.slug
+       ORDER BY sr.authority_weight DESC`,
+    );
 
     const fallback = getFallbackSources();
     const liveSources = sources.rows.map((row): SourceInfo => ({
