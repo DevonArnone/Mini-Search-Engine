@@ -610,7 +610,6 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const debouncedQuery = useDebounce(state.q, 250);
-  const lastAnalyticsKeyRef = useRef<string | null>(null);
 
   // Sync URL params → state when the URL changes (back/forward navigation)
   useEffect(() => {
@@ -661,54 +660,16 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
     return () => controller.abort();
   }, [debouncedQuery, pathname, router, state]);
 
-  // Analytics view event (deduplicated)
-  useEffect(() => {
-    if (results.mode !== "live") return;
-    const key = JSON.stringify({
-      q: state.q,
-      page: state.page,
-      sort: state.sort,
-      source: state.source,
-      contentType: state.contentType,
-      totalHits: results.totalHits,
-    });
-    if (lastAnalyticsKeyRef.current === key) return;
-    lastAnalyticsKeyRef.current = key;
-    void fetch("/api/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: state.q,
-        filters: {
-          source: state.source,
-          contentType: state.contentType,
-          domain: state.domain,
-          language: state.language,
-          tags: state.tags,
-          sort: state.sort,
-          page: state.page,
-          from: state.from,
-          to: state.to,
-          updatedWithin: state.updatedWithin,
-        },
-        resultsCount: results.totalHits,
-        latencyMs: results.processingTimeMs,
-      }),
-    }).catch(() => undefined);
-  }, [results, state]);
-
-  function trackClick(result: SearchResult) {
-    if (results.mode !== "live") return;
+  function trackClick(result: SearchResult, resultRank: number) {
+    if (!results.searchId || !isUuid(result.id)) return;
     void fetch("/api/analytics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       keepalive: true,
       body: JSON.stringify({
-        query: state.q,
-        filters: { source: state.source, contentType: state.contentType, domain: state.domain },
-        resultsCount: results.totalHits,
-        latencyMs: results.processingTimeMs,
-        clickedDocumentId: isUuid(result.id) ? result.id : null,
+        searchId: results.searchId,
+        clickedDocumentId: result.id,
+        resultRank,
       }),
     }).catch(() => undefined);
   }
@@ -787,10 +748,10 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
           <SkeletonList />
         ) : results.results.length ? (
           <div className="space-y-4">
-            {results.results.map((result) => (
+            {results.results.map((result, index) => (
               <ResultCard
                 key={result.id}
-                onTrackClick={() => trackClick(result)}
+                onTrackClick={() => trackClick(result, (state.page - 1) * state.limit + index + 1)}
                 result={result}
               />
             ))}

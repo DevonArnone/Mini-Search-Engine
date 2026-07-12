@@ -34,6 +34,7 @@ export interface SearchResult {
 }
 
 export interface SearchResponse {
+  searchId?: string;
   query: string;
   page: number;
   limit: number;

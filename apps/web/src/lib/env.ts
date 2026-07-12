@@ -5,5 +5,7 @@ export const env = {
   databaseUrl:
     process.env.DATABASE_URL ??
     "postgresql://mini_search:mini_search@localhost:5432/mini_search",
+  searchTimeoutMs: Number(process.env.SEARCH_TIMEOUT_MS ?? "4000"),
+  databaseTimeoutMs: Number(process.env.DATABASE_TIMEOUT_MS ?? "5000"),
+  enableDemoMode: process.env.SEARCH_DEMO_MODE === "true",
 };
-

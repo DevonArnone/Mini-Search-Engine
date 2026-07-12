@@ -1,32 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
+import { apiError, validationError } from "@/lib/api";
+import { clickEventSchema } from "@/lib/api-schemas";
 import { withDb } from "@/lib/db";
 
-const analyticsSchema = z.object({
-  query: z.string(),
-  filters: z.record(z.any()).default({}),
-  resultsCount: z.number().int().min(0).default(0),
-  latencyMs: z.number().int().min(0).default(0),
-  clickedDocumentId: z.string().uuid().nullable().optional(),
-});
-
 export async function POST(request: NextRequest) {
-  const payload = analyticsSchema.parse(await request.json());
-  await withDb((client) =>
-    client.query(
-      `INSERT INTO search_analytics (query, filters, results_count, latency_ms, clicked_document_id)
-       VALUES ($1, $2::jsonb, $3, $4, $5)`,
-      [
-        payload.query,
-        JSON.stringify(payload.filters),
-        payload.resultsCount,
-        payload.latencyMs,
-        payload.clickedDocumentId ?? null,
-      ],
-    ),
-  );
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return apiError("invalid_json", "The request body must be valid JSON.", 400);
+  }
 
-  return NextResponse.json({ ok: true });
+  const parsed = clickEventSchema.safeParse(body);
+  if (!parsed.success) return validationError(parsed.error);
+
+  try {
+    const sessionId = request.cookies.get("devdocs_session")?.value ?? null;
+    await withDb((client) =>
+      client.query(
+        `INSERT INTO search_analytics
+           (search_id, event_type, session_id, query, filters, results_count, latency_ms, clicked_document_id, result_rank)
+         SELECT $1, 'result_click', $2, query, filters, results_count, latency_ms, $3, $4
+         FROM search_analytics
+         WHERE search_id = $1 AND event_type = 'search'
+         LIMIT 1`,
+        [parsed.data.searchId, sessionId, parsed.data.clickedDocumentId, parsed.data.resultRank],
+      ),
+    );
+    return NextResponse.json({ ok: true });
+  } catch {
+    return apiError("analytics_unavailable", "The analytics event could not be recorded.", 503);
+  }
 }
-

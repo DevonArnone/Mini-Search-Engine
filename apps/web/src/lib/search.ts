@@ -7,6 +7,8 @@ import type {
 } from "@mini-search/shared-types";
 
 import { getDocumentsIndex } from "@/lib/meili";
+import { ServiceUnavailableError, withTimeout } from "@/lib/api";
+import { env } from "@/lib/env";
 
 export interface SearchArgs {
   q: string;
@@ -105,23 +107,23 @@ function updatedWithinFilter(updatedWithin: string): string | null {
   return `last_updated_at >= "${cutoff.toISOString()}"`;
 }
 
-function buildFilter(args: SearchArgs): string | undefined {
+export function buildFilter(args: SearchArgs): string | undefined {
   const filters: string[] = [];
 
   if (args.source.length) {
-    filters.push(`source_slug IN [${args.source.map((v) => `"${v}"`).join(", ")}]`);
+    filters.push(`source_slug IN [${args.source.map((v) => JSON.stringify(v)).join(", ")}]`);
   }
   if (args.contentType.length) {
-    filters.push(`content_type IN [${args.contentType.map((v) => `"${v}"`).join(", ")}]`);
+    filters.push(`content_type IN [${args.contentType.map((v) => JSON.stringify(v)).join(", ")}]`);
   }
   if (args.domain.length) {
-    filters.push(`domain IN [${args.domain.map((v) => `"${v}"`).join(", ")}]`);
+    filters.push(`domain IN [${args.domain.map((v) => JSON.stringify(v)).join(", ")}]`);
   }
   if (args.language.length) {
-    filters.push(`language IN [${args.language.map((v) => `"${v}"`).join(", ")}]`);
+    filters.push(`language IN [${args.language.map((v) => JSON.stringify(v)).join(", ")}]`);
   }
   if (args.tags.length) {
-    filters.push(`tags IN [${args.tags.map((v) => `"${v}"`).join(", ")}]`);
+    filters.push(`tags IN [${args.tags.map((v) => JSON.stringify(v)).join(", ")}]`);
   }
   if (args.from) {
     filters.push(`published_at >= ${JSON.stringify(args.from)}`);
@@ -137,12 +139,10 @@ function buildFilter(args: SearchArgs): string | undefined {
   return filters.length ? filters.join(" AND ") : undefined;
 }
 
-function buildSort(sort: SearchSort): string[] {
+function buildSort(sort: SearchSort): string[] | undefined {
   if (sort === "newest") return ["published_at:desc", "authority_score:desc"];
   if (sort === "oldest") return ["published_at:asc"];
-  // relevance: Meilisearch's text relevance is primary (via rankingRules),
-  // but for the explicit sort= clause we still push authority and boost.
-  return ["authority_score:desc", "boost_score:desc"];
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -263,16 +263,17 @@ function runDemoSearch(args: SearchArgs): SearchResponse {
 export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
   try {
     const index = getDocumentsIndex();
-    const response = await index.search(args.q, {
+    const sort = buildSort(args.sort);
+    const response = await withTimeout(index.search(args.q, {
       limit: args.limit,
       offset: (args.page - 1) * args.limit,
       filter: buildFilter(args),
-      sort: buildSort(args.sort),
+      ...(sort ? { sort } : {}),
       attributesToHighlight: ["title", "headings", "section_path", "meta_description", "body"],
       attributesToCrop: ["body"],
       cropLength: 35,
       facets: ["source_slug", "content_type"],
-    });
+    }), env.searchTimeoutMs, "search");
 
     const results: SearchResult[] = response.hits.map((hit) => {
       const formatted = hit._formatted as Record<string, unknown> | undefined;
@@ -317,8 +318,10 @@ export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
       recoverySuggestions: totalHits === 0 && args.q ? buildRecoverySuggestions(args.q) : undefined,
       results,
     };
-  } catch {
-    return runDemoSearch(args);
+  } catch (error) {
+    if (env.enableDemoMode) return runDemoSearch(args);
+    if (error instanceof ServiceUnavailableError) throw error;
+    throw new ServiceUnavailableError("search");
   }
 }
 
@@ -329,10 +332,10 @@ export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
 export async function runAutocomplete(q: string) {
   if (!q) return [];
   try {
-    const response = await getDocumentsIndex().search(q, {
+    const response = await withTimeout(getDocumentsIndex().search(q, {
       limit: 8,
       attributesToRetrieve: ["title", "source_name", "content_type"],
-    });
+    }), env.searchTimeoutMs, "search");
     return Array.from(
       new Set(
         response.hits
@@ -340,14 +343,16 @@ export async function runAutocomplete(q: string) {
           .filter(Boolean),
       ),
     ).slice(0, 6);
-  } catch {
-    return Array.from(
+  } catch (error) {
+    if (env.enableDemoMode) return Array.from(
       new Set(
         demoDocuments
           .map((doc) => doc.title)
           .filter((title) => title.toLowerCase().includes(q.toLowerCase())),
       ),
     ).slice(0, 6);
+    if (error instanceof ServiceUnavailableError) throw error;
+    throw new ServiceUnavailableError("search");
   }
 }
 
@@ -357,10 +362,10 @@ export async function runAutocomplete(q: string) {
 
 export async function runFilterQuery(): Promise<FiltersResponse> {
   try {
-    const response = await getDocumentsIndex().search("", {
+    const response = await withTimeout(getDocumentsIndex().search("", {
       limit: 0,
       facets: ["source_slug", "content_type", "domain", "language", "tags"],
-    });
+    }), env.searchTimeoutMs, "search");
     const dist = response.facetDistribution ?? {};
     return {
       sources: Object.entries(dist.source_slug ?? {}).map(([value, count]) => ({ value, count })),
@@ -370,7 +375,11 @@ export async function runFilterQuery(): Promise<FiltersResponse> {
       tags: Object.entries(dist.tags ?? {}).map(([value, count]) => ({ value, count })),
       dateBuckets: [],
     };
-  } catch {
+  } catch (error) {
+    if (!env.enableDemoMode) {
+      if (error instanceof ServiceUnavailableError) throw error;
+      throw new ServiceUnavailableError("search");
+    }
     const count = (values: string[]) =>
       Array.from(new Set(values)).map((value) => ({
         value,
