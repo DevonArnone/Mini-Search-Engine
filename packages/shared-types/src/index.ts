@@ -98,6 +98,7 @@ export interface InsightQuery {
 }
 
 export interface InsightsResponse {
+  mode: "live" | "unavailable";
   totalSearches: number;
   uniqueQueries: number;
   zeroResultQueries: InsightQuery[];
@@ -105,6 +106,10 @@ export interface InsightsResponse {
   lowClickQueries: InsightQuery[];
   topSources: FilterOption[];
   avgLatencyMs: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+  zeroResultRate: number;
+  clickThroughRate: number;
   period: string;
 }
 
@@ -118,7 +123,7 @@ export interface StatusDomainCount {
 }
 
 export interface StatusResponse {
-  mode: "live" | "demo";
+  mode: "live" | "degraded" | "demo" | "unavailable";
   indexedDocuments: number;
   queuedDocuments: number;
   crawlFailures: number;

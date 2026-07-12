@@ -1,123 +1,31 @@
-import Link from "next/link";
+import { Activity, Database, Search, Workflow } from "lucide-react";
 
-import type { SourceInfo, StatusResponse } from "@mini-search/shared-types";
+import type { StatusResponse } from "@mini-search/shared-types";
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US").format(value);
-}
-
-function crawlStatusDot(status: SourceInfo["crawlStatus"]) {
-  const colors: Record<string, string> = {
-    healthy: "bg-emerald-400",
-    crawling: "bg-blue-400",
-    failing: "bg-rose-400",
-    pending: "bg-stone-300",
-  };
-  return colors[status] ?? colors.pending;
+function stateLabel(healthy: boolean) {
+  return healthy ? { label: "Healthy", color: "bg-emerald-500", text: "text-emerald-700" } : { label: "Unavailable", color: "bg-rose-500", text: "text-rose-700" };
 }
 
 export function StatusOverview({ status }: { status: StatusResponse }) {
-  const cards = [
-    { label: "Indexed documents", value: formatNumber(status.indexedDocuments), tone: "text-ink" },
-    { label: "Queued URLs", value: formatNumber(status.queuedDocuments), tone: "text-ocean" },
-    { label: "Analytics events", value: formatNumber(status.analyticsEvents), tone: "text-emerald-700" },
-    { label: "Crawl failures", value: formatNumber(status.crawlFailures), tone: "text-amber-700" },
+  const search = stateLabel(status.searchEngine.healthy);
+  const database = stateLabel(status.database.healthy);
+  const rows = [
+    { icon: Search, label: "Search index", value: search.label, dot: search.color, text: search.text },
+    { icon: Database, label: "PostgreSQL", value: database.label, dot: database.color, text: database.text },
+    { icon: Workflow, label: "Queue depth", value: status.queuedDocuments.toLocaleString(), dot: status.queuedDocuments ? "bg-amber-400" : "bg-emerald-500", text: "text-ink" },
+    { icon: Activity, label: "Crawl failures", value: status.crawlFailures.toLocaleString(), dot: status.crawlFailures ? "bg-rose-500" : "bg-emerald-500", text: "text-ink" },
   ];
 
   return (
-    <section className="space-y-5">
-      {/* Health badges */}
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span
-          className={`status-pill ${
-            status.mode === "live"
-              ? "text-emerald-700"
-              : "text-amber-700"
-          }`}
-        >
-          {status.mode === "live" ? "Live index" : "Demo fallback"}
-        </span>
-        <span
-          className={`status-pill ${
-            status.searchEngine.healthy ? "text-emerald-700" : "text-slate-500"
-          }`}
-        >
-          Search: {status.searchEngine.healthy ? "Healthy" : "Unavailable"}
-        </span>
-        <span
-          className={`status-pill ${
-            status.database.healthy ? "text-emerald-700" : "text-slate-500"
-          }`}
-        >
-          Database: {status.database.healthy ? "Healthy" : "Unavailable"}
-        </span>
-        <Link className="ml-auto text-xs font-semibold text-ocean hover:underline" href="/insights">
-          View insights →
-        </Link>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <article
-            className="metric-card"
-            key={card.label}
-          >
-            <p className="text-sm font-medium text-slate-500">{card.label}</p>
-            <p className={`mt-3 font-display text-3xl font-bold ${card.tone}`}>{card.value}</p>
-          </article>
+    <section className="panel overflow-hidden" aria-labelledby="system-status-heading">
+      <div className="flex items-center justify-between border-b border-line px-4 py-3"><h2 className="text-sm font-semibold text-ink" id="system-status-heading">System status</h2><span className="text-xs capitalize text-muted">{status.mode}</span></div>
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4">
+        {rows.map(({ icon: Icon, label, value, dot, text }, index) => (
+          <div className={`flex items-center gap-3 px-4 py-4 ${index ? "border-t border-line sm:border-l sm:border-t-0" : ""} ${index === 2 ? "sm:border-l-0 sm:border-t xl:border-l xl:border-t-0" : ""}`} key={label}>
+            <Icon aria-hidden className="h-4 w-4 text-slate-400" /><div className="min-w-0 flex-1"><p className="text-xs text-muted">{label}</p><p className={`mt-0.5 inline-flex items-center gap-2 text-sm font-medium ${text}`}><span className={`status-dot ${dot}`} />{value}</p></div>
+          </div>
         ))}
       </div>
-
-      {/* Source health table */}
-      {status.sources && status.sources.length > 0 ? (
-        <article className="premium-card p-5">
-          <div className="mb-4 flex items-end justify-between">
-            <div>
-              <p className="section-kicker">
-                Source health
-              </p>
-              <h2 className="mt-1 font-display text-xl font-bold text-ink">
-                Indexed documentation sources
-              </h2>
-            </div>
-            <p className="text-xs text-slate-400">
-              {new Date(status.generatedAt).toLocaleString()}
-            </p>
-          </div>
-          <div className="space-y-2">
-            {status.sources.map((source) => (
-              <div
-                className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-3"
-                key={source.slug}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className={`h-2 w-2 flex-shrink-0 rounded-full ${crawlStatusDot(source.crawlStatus)}`}
-                  />
-                  <Link
-                    className="text-sm font-semibold text-ink hover:text-ocean"
-                    href={`/sources/${source.slug}`}
-                  >
-                    {source.name}
-                  </Link>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-slate-500">
-                  {source.docCount > 0 ? (
-                    <span>{formatNumber(source.docCount)} docs</span>
-                  ) : (
-                    <span className="text-slate-400">Pending crawl</span>
-                  )}
-                  <span className="capitalize">{source.crawlStatus}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-400">
-            Duplicate content groups: {formatNumber(status.duplicateGroups)}. Crawl failures: {formatNumber(status.crawlFailures)}.
-          </p>
-        </article>
-      ) : null}
     </section>
   );
 }
