@@ -24,6 +24,11 @@ _next_allowed_fetch_at: dict[str, float] = {}
 _source_registry: dict[str, dict] = {}
 
 
+def cap_source_max_depth(source_max_depth: int | None, global_max_depth: int) -> int:
+    configured_depth = global_max_depth if source_max_depth is None else int(source_max_depth)
+    return min(configured_depth, global_max_depth)
+
+
 def register_sources(sources: list[dict]) -> None:
     """Populate the in-memory source registry before the worker runs."""
     for source in sources:
@@ -33,7 +38,9 @@ def register_sources(sources: list[dict]) -> None:
                 "name": source.get("name", slug),
                 "authority_weight": float(source.get("authority_weight", 5)),
                 "allowed_domains": tuple(source.get("allowed_domains", [])),
-                "max_depth": int(source.get("max_depth", settings.crawler_max_depth)),
+                "max_depth": cap_source_max_depth(
+                    source.get("max_depth"), settings.crawler_max_depth
+                ),
                 "rate_limit_per_domain_ms": int(
                     source.get("rate_limit_per_domain_ms", settings.crawler_rate_limit_per_domain_ms)
                 ),

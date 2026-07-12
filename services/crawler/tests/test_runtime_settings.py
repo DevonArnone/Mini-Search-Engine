@@ -2,7 +2,7 @@ from pathlib import Path
 
 from app.core.settings import resolve_runtime_crawler_config
 from app.pipeline.seeds import validate_seed_config
-from app.pipeline.worker import compute_retry_delay_seconds, should_retry
+from app.pipeline.worker import cap_source_max_depth, compute_retry_delay_seconds, should_retry
 
 
 def test_resolve_runtime_crawler_config_uses_seed_defaults(tmp_path: Path, monkeypatch):
@@ -49,6 +49,12 @@ def test_should_retry_only_for_retryable_statuses():
     assert should_retry(429, retry_count=0) is True
     assert should_retry(404, retry_count=0) is False
     assert should_retry(None, retry_count=0) is True
+
+
+def test_global_depth_caps_source_depth():
+    assert cap_source_max_depth(3, global_max_depth=1) == 1
+    assert cap_source_max_depth(1, global_max_depth=3) == 1
+    assert cap_source_max_depth(None, global_max_depth=2) == 2
 
 
 def test_runtime_config_collects_per_source_domains(tmp_path: Path, monkeypatch):
