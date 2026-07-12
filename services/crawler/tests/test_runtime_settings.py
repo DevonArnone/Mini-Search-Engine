@@ -2,7 +2,12 @@ from pathlib import Path
 
 from app.core.settings import resolve_runtime_crawler_config
 from app.pipeline.seeds import validate_seed_config
-from app.pipeline.worker import cap_source_max_depth, compute_retry_delay_seconds, should_retry
+from app.pipeline.worker import (
+    cap_source_max_depth,
+    compute_retry_delay_seconds,
+    should_discover_links,
+    should_retry,
+)
 
 
 def test_resolve_runtime_crawler_config_uses_seed_defaults(tmp_path: Path, monkeypatch):
@@ -55,6 +60,11 @@ def test_global_depth_caps_source_depth():
     assert cap_source_max_depth(3, global_max_depth=1) == 1
     assert cap_source_max_depth(1, global_max_depth=3) == 1
     assert cap_source_max_depth(None, global_max_depth=2) == 2
+
+
+def test_link_discovery_stops_at_depth_limit():
+    assert should_discover_links(current_depth=0, max_depth=1) is True
+    assert should_discover_links(current_depth=1, max_depth=1) is False
 
 
 def test_runtime_config_collects_per_source_domains(tmp_path: Path, monkeypatch):

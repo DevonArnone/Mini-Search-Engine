@@ -29,6 +29,10 @@ def cap_source_max_depth(source_max_depth: int | None, global_max_depth: int) ->
     return min(configured_depth, global_max_depth)
 
 
+def should_discover_links(current_depth: int, max_depth: int) -> bool:
+    return current_depth < max_depth
+
+
 def register_sources(sources: list[dict]) -> None:
     """Populate the in-memory source registry before the worker runs."""
     for source in sources:
@@ -134,15 +138,18 @@ async def process_queue_item(item) -> None:
         batch_index([indexed_document])
         mark_document_index_status(indexed_document["id"], "indexed")
 
-        for link in parsed.links[:50]:
-            allowed_domains = source_info.get("allowed_domains") or settings.crawler_allowed_domains
-            if extract_domain(link) in allowed_domains:
-                enqueue_url(
-                    link,
-                    depth=item.depth + 1,
-                    source_url=result.url,
-                    source_slug=source_slug,  # inherit source from parent
+        if should_discover_links(item.depth, max_depth):
+            for link in parsed.links[:50]:
+                allowed_domains = (
+                    source_info.get("allowed_domains") or settings.crawler_allowed_domains
                 )
+                if extract_domain(link) in allowed_domains:
+                    enqueue_url(
+                        link,
+                        depth=item.depth + 1,
+                        source_url=result.url,
+                        source_slug=source_slug,
+                    )
         mark_queue_status(item.id, "done")
     except Exception as exc:
         if "indexed_document" in locals():
