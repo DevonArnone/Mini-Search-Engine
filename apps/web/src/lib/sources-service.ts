@@ -20,12 +20,12 @@ export async function getSources(): Promise<SourcesResponse> {
         crawl_status: string;
       }>(
         `SELECT sr.slug, sr.name, sr.description, sr.home_url, sr.authority_weight,
-                sr.crawl_cadence_hours, sr.last_crawled_at, sr.crawl_status,
+                sr.crawl_cadence_hours, COALESCE(sr.last_successful_crawl_at, sr.last_crawled_at) AS last_crawled_at, sr.crawl_status,
                 COALESCE(dc.doc_count, 0)::text AS doc_count
          FROM source_registry sr
          LEFT JOIN (
            SELECT source_slug, COUNT(*) AS doc_count
-           FROM documents WHERE source_slug IS NOT NULL GROUP BY source_slug
+           FROM documents WHERE source_slug IS NOT NULL AND status = 'indexed' GROUP BY source_slug
          ) dc ON dc.source_slug = sr.slug
          ORDER BY sr.authority_weight DESC, sr.name ASC`,
       );

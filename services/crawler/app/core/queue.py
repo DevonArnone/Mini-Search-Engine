@@ -51,6 +51,21 @@ def dequeue_batch(limit: int = 10) -> list[QueueItem]:
     return [QueueItem(**row) for row in rows]
 
 
+def requeue_stale_processing(max_age_minutes: int = 30) -> int:
+    """Recover queue items left processing after an interrupted worker."""
+    with db_cursor() as cur:
+        cur.execute(
+            """
+            UPDATE crawl_queue
+            SET status = 'pending', scheduled_at = NOW(), processed_at = NULL
+            WHERE status = 'processing'
+              AND scheduled_at < NOW() - (%s * INTERVAL '1 minute')
+            """,
+            (max_age_minutes,),
+        )
+        return cur.rowcount
+
+
 def mark_queue_status(queue_id: int, status: str, retry_count: int | None = None) -> None:
     assignments = ["status = %s", "processed_at = NOW()"]
     values: list[Any] = [status]

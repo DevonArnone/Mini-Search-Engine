@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 
@@ -10,7 +11,45 @@ from app.db.connection import db_cursor
 
 def load_seed_config(path: str) -> dict:
     with Path(path).open("r", encoding="utf-8") as handle:
-        return yaml.safe_load(handle)
+        config = yaml.safe_load(handle) or {}
+    validate_seed_config(config)
+    return config
+
+
+def validate_seed_config(config: dict) -> None:
+    if not isinstance(config, dict):
+        raise ValueError("Seed configuration must be a mapping")
+    sources = config.get("sources", [])
+    if sources and not isinstance(sources, list):
+        raise ValueError("sources must be a list")
+
+    seen_slugs: set[str] = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ValueError("Each source must be a mapping")
+        slug = str(source.get("slug", "")).strip()
+        if not slug or slug in seen_slugs:
+            raise ValueError(f"Source slug is missing or duplicated: {slug or '<empty>'}")
+        seen_slugs.add(slug)
+
+        allowed_domains = {
+            str(domain).strip().lower() for domain in source.get("allowed_domains", []) if str(domain).strip()
+        }
+        if not allowed_domains:
+            raise ValueError(f"Source {slug} must define allowed_domains")
+        authority = float(source.get("authority_weight", 5))
+        if authority < 0 or authority > 10:
+            raise ValueError(f"Source {slug} authority_weight must be between 0 and 10")
+        if int(source.get("max_depth", config.get("defaults", {}).get("max_depth", 2))) < 0:
+            raise ValueError(f"Source {slug} max_depth cannot be negative")
+
+        for seed in source.get("seeds", []):
+            url = str(seed.get("url", "")).strip() if isinstance(seed, dict) else ""
+            parsed = urlparse(url)
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+                raise ValueError(f"Source {slug} has an invalid seed URL: {url}")
+            if parsed.hostname.lower() not in allowed_domains:
+                raise ValueError(f"Source {slug} seed host is outside allowed_domains: {url}")
 
 
 def _upsert_source_registry(source: dict) -> None:

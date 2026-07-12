@@ -40,23 +40,33 @@ def resolve_runtime_crawler_config(seed_config_path: str) -> dict[str, object]:
         for domain in seed_config.get("allowed_domains", [])
         if isinstance(seed_config, dict) and isinstance(domain, str) and domain.strip()
     )
+    if not seed_allowed_domains and isinstance(seed_config, dict):
+        seed_allowed_domains = tuple(
+            dict.fromkeys(
+                domain.strip().lower()
+                for source in seed_config.get("sources", [])
+                if isinstance(source, dict)
+                for domain in source.get("allowed_domains", [])
+                if isinstance(domain, str) and domain.strip()
+            )
+        )
 
     raw_allowed_domains = env_value("CRAWLER_ALLOWED_DOMAINS")
     allowed_domains = (
         tuple(domain.strip() for domain in raw_allowed_domains.split(",") if domain.strip())
         if raw_allowed_domains
-        else seed_allowed_domains or ("example.com",)
+        else seed_allowed_domains
     )
 
     return {
-        "crawler_max_depth": int(env_value("CRAWLER_MAX_DEPTH") or defaults.get("max_depth", 2)),
-        "crawler_concurrency": int(env_value("CRAWLER_CONCURRENCY") or "5"),
+        "crawler_max_depth": max(0, int(env_value("CRAWLER_MAX_DEPTH") or defaults.get("max_depth", 2))),
+        "crawler_concurrency": max(1, int(env_value("CRAWLER_CONCURRENCY") or "5")),
         "crawler_allowed_domains": allowed_domains,
-        "crawler_rate_limit_per_domain_ms": int(
+        "crawler_rate_limit_per_domain_ms": max(0, int(
             env_value("CRAWLER_RATE_LIMIT_PER_DOMAIN_MS")
             or defaults.get("rate_limit_per_domain_ms", 500)
-        ),
-        "crawler_max_retries": int(env_value("CRAWLER_MAX_RETRIES") or "3"),
+        )),
+        "crawler_max_retries": max(0, int(env_value("CRAWLER_MAX_RETRIES") or "3")),
     }
 
 
@@ -72,7 +82,8 @@ class Settings:
     meili_host: str = os.getenv("MEILI_HOST", "http://localhost:7700")
     meili_master_key: str = os.getenv("MEILI_MASTER_KEY", "mini_search_master_key")
     crawler_user_agent: str = os.getenv(
-        "CRAWLER_USER_AGENT", "MiniSearchBot/1.0 (+https://example.com/bot)"
+        "CRAWLER_USER_AGENT",
+        "MiniSearchBot/1.0 (+https://github.com/DevonArnone/Mini-Search-Engine)",
     )
     crawler_max_depth: int = int(RUNTIME_CRAWLER_CONFIG["crawler_max_depth"])
     crawler_concurrency: int = int(RUNTIME_CRAWLER_CONFIG["crawler_concurrency"])
@@ -83,9 +94,10 @@ class Settings:
         RUNTIME_CRAWLER_CONFIG["crawler_rate_limit_per_domain_ms"]
     )
     crawler_max_retries: int = int(RUNTIME_CRAWLER_CONFIG["crawler_max_retries"])
-    crawler_ignore_robots: bool = env_flag("CRAWLER_IGNORE_ROBOTS", True)
+    crawler_ignore_robots: bool = env_flag("CRAWLER_IGNORE_ROBOTS", False)
     seed_config_path: str = SEED_CONFIG_PATH
     meili_index_name: str = "documents"
+    meili_task_timeout_ms: int = int(os.getenv("MEILI_TASK_TIMEOUT_MS", "30000"))
 
 
 settings = Settings()

@@ -77,7 +77,7 @@ def upsert_document(
                 %s, %s,
                 %s, %s, %s,
                 %s, %s, %s,
-                'indexed', NOW(), NOW()
+                'stored', NOW(), NOW()
             )
             ON CONFLICT (url) DO UPDATE SET
                 canonical_url      = EXCLUDED.canonical_url,
@@ -98,7 +98,7 @@ def upsert_document(
                 boost_score        = EXCLUDED.boost_score,
                 authority_score    = EXCLUDED.authority_score,
                 freshness_status   = EXCLUDED.freshness_status,
-                status             = 'indexed',
+                status             = 'stored',
                 last_crawled_at    = NOW(),
                 updated_at         = NOW()
             RETURNING id, url
@@ -172,6 +172,13 @@ def upsert_document(
     }
 
 
+def mark_document_index_status(document_id: str, status: str) -> None:
+    if status not in {"indexed", "index_failed"}:
+        raise ValueError(f"Unsupported document index status: {status}")
+    with db_cursor() as cur:
+        cur.execute("UPDATE documents SET status = %s, updated_at = NOW() WHERE id = %s", (status, document_id))
+
+
 def log_crawl_attempt(
     url: str,
     status_code: int | None,
@@ -193,6 +200,7 @@ def update_source_registry(
     slug: str,
     crawl_status: str,
     last_crawled_at: datetime | None = None,
+    successful: bool = False,
 ) -> None:
     """Refresh the source_registry row after a crawl pass."""
     with db_cursor() as cur:
@@ -201,11 +209,43 @@ def update_source_registry(
             UPDATE source_registry
             SET crawl_status    = %s,
                 last_crawled_at = COALESCE(%s, last_crawled_at),
+                last_successful_crawl_at = CASE
+                    WHEN %s THEN COALESCE(%s, NOW())
+                    ELSE last_successful_crawl_at
+                END,
                 doc_count = (
-                    SELECT COUNT(*) FROM documents WHERE source_slug = %s
+                    SELECT COUNT(*) FROM documents WHERE source_slug = %s AND status = 'indexed'
                 ),
                 updated_at = NOW()
             WHERE slug = %s
             """,
-            (crawl_status, last_crawled_at, slug, slug),
+            (crawl_status, last_crawled_at, successful, last_crawled_at, slug, slug),
         )
+
+
+def get_source_queue_outcomes(since: datetime) -> dict[str, dict[str, int]]:
+    with db_cursor() as cur:
+        cur.execute(
+            """
+            SELECT source_slug,
+                   COUNT(*) FILTER (WHERE status = 'done')::int AS done,
+                   COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
+                   COUNT(*) FILTER (WHERE status IN ('pending', 'processing'))::int AS remaining
+            FROM crawl_queue
+            WHERE source_slug IS NOT NULL
+              AND (
+                processed_at >= %s
+                OR status IN ('pending', 'processing')
+              )
+            GROUP BY source_slug
+            """,
+            (since,),
+        )
+        return {
+            row["source_slug"]: {
+                "done": row["done"],
+                "failed": row["failed"],
+                "remaining": row["remaining"],
+            }
+            for row in cur.fetchall()
+        }

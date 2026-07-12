@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS source_registry (
     authority_weight FLOAT NOT NULL DEFAULT 5,
     crawl_cadence_hours INT NOT NULL DEFAULT 168,
     last_crawled_at TIMESTAMP NULL,
+    last_successful_crawl_at TIMESTAMP NULL,
     doc_count INT NOT NULL DEFAULT 0,
     crawl_status VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending | crawling | healthy | failing
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -127,6 +128,7 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS authority_score FLOAT NOT NULL DE
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS freshness_status VARCHAR(20) NOT NULL DEFAULT 'unknown';
 
 ALTER TABLE crawl_queue ADD COLUMN IF NOT EXISTS source_slug TEXT;
+ALTER TABLE source_registry ADD COLUMN IF NOT EXISTS last_successful_crawl_at TIMESTAMP NULL;
 
 ALTER TABLE search_analytics ADD COLUMN IF NOT EXISTS search_id UUID;
 ALTER TABLE search_analytics ADD COLUMN IF NOT EXISTS event_type VARCHAR(30) NOT NULL DEFAULT 'search';
@@ -141,6 +143,7 @@ CREATE TABLE IF NOT EXISTS source_registry (
     authority_weight FLOAT NOT NULL DEFAULT 5,
     crawl_cadence_hours INT NOT NULL DEFAULT 168,
     last_crawled_at TIMESTAMP NULL,
+    last_successful_crawl_at TIMESTAMP NULL,
     doc_count INT NOT NULL DEFAULT 0,
     crawl_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),

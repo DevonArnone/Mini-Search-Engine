@@ -14,7 +14,8 @@ from app.core.robots import can_fetch
 from app.core.settings import settings
 from app.extract.parser import parse_html
 from app.indexer.meili import batch_index
-from app.pipeline.storage import log_crawl_attempt, upsert_document
+from app.pipeline.storage import log_crawl_attempt, mark_document_index_status, upsert_document
+from app.utils.url import extract_domain
 
 _domain_lock = asyncio.Lock()
 _next_allowed_fetch_at: dict[str, float] = {}
@@ -31,6 +32,11 @@ def register_sources(sources: list[dict]) -> None:
             _source_registry[slug] = {
                 "name": source.get("name", slug),
                 "authority_weight": float(source.get("authority_weight", 5)),
+                "allowed_domains": tuple(source.get("allowed_domains", [])),
+                "max_depth": int(source.get("max_depth", settings.crawler_max_depth)),
+                "rate_limit_per_domain_ms": int(
+                    source.get("rate_limit_per_domain_ms", settings.crawler_rate_limit_per_domain_ms)
+                ),
             }
 
 
@@ -46,8 +52,8 @@ def should_retry(status_code: int | None, retry_count: int) -> bool:
     return status_code in {408, 425, 429} or status_code >= 500
 
 
-async def wait_for_domain_slot(domain: str) -> None:
-    delay_seconds = settings.crawler_rate_limit_per_domain_ms / 1000
+async def wait_for_domain_slot(domain: str, delay_ms: int | None = None) -> None:
+    delay_seconds = (settings.crawler_rate_limit_per_domain_ms if delay_ms is None else delay_ms) / 1000
     if delay_seconds <= 0:
         return
 
@@ -74,7 +80,9 @@ def handle_retryable_failure(item, status_code: int | None) -> None:
 
 
 async def process_queue_item(item) -> None:
-    if item.depth > settings.crawler_max_depth:
+    source_info = _source_registry.get(item.source_slug, {}) if item.source_slug else {}
+    max_depth = int(source_info.get("max_depth", settings.crawler_max_depth))
+    if item.depth > max_depth:
         mark_queue_status(item.id, "skipped")
         return
 
@@ -90,7 +98,7 @@ async def process_queue_item(item) -> None:
     authority_score = source_info.get("authority_weight", 0)
 
     try:
-        await wait_for_domain_slot(item.domain)
+        await wait_for_domain_slot(item.domain, int(source_info.get("rate_limit_per_domain_ms", settings.crawler_rate_limit_per_domain_ms)))
         result = await fetch_html(item.url)
         log_crawl_attempt(
             item.url,
@@ -117,12 +125,11 @@ async def process_queue_item(item) -> None:
             authority_score=authority_score,
         )
         batch_index([indexed_document])
+        mark_document_index_status(indexed_document["id"], "indexed")
 
         for link in parsed.links[:50]:
-            if any(
-                link.startswith(f"http://{domain}") or link.startswith(f"https://{domain}")
-                for domain in settings.crawler_allowed_domains
-            ):
+            allowed_domains = source_info.get("allowed_domains") or settings.crawler_allowed_domains
+            if extract_domain(link) in allowed_domains:
                 enqueue_url(
                     link,
                     depth=item.depth + 1,
@@ -131,12 +138,17 @@ async def process_queue_item(item) -> None:
                 )
         mark_queue_status(item.id, "done")
     except Exception as exc:
+        if "indexed_document" in locals():
+            try:
+                mark_document_index_status(indexed_document["id"], "index_failed")
+            except Exception:
+                pass
         log_crawl_attempt(item.url, None, None, None, str(exc))
         handle_retryable_failure(item, None)
 
 
-async def run_worker() -> None:
-    while True:
+async def run_worker(stop_event: asyncio.Event | None = None) -> None:
+    while not (stop_event and stop_event.is_set()):
         items = dequeue_batch(limit=settings.crawler_concurrency)
         if not items:
             break
