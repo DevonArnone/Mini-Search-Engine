@@ -108,10 +108,6 @@ CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 CREATE INDEX IF NOT EXISTS idx_crawl_queue_status_priority ON crawl_queue(status, priority, scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_query ON search_analytics(query);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_created_at ON search_analytics(created_at);
-CREATE INDEX IF NOT EXISTS idx_search_analytics_search_id ON search_analytics(search_id);
-CREATE INDEX IF NOT EXISTS idx_search_analytics_event_created ON search_analytics(event_type, created_at);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_search_analytics_unique_search
-    ON search_analytics(search_id) WHERE event_type = 'search';
 """
 
 # Additive migration: applied after CREATE TABLE IF NOT EXISTS so that existing
