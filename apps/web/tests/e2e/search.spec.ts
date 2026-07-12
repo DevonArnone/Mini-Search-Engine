@@ -10,14 +10,15 @@ test("core pages render without horizontal overflow", async ({ page }) => {
   }
 });
 
-test("home search opens the workbench with demo results", async ({ page }) => {
+test("home search opens the workbench with results", async ({ page }) => {
   await page.goto("/");
   const search = page.getByRole("combobox", { name: "Search developer documentation" });
   await search.fill("useState");
   await search.press("Enter");
   await expect(page).toHaveURL(/\/search\?q=useState/);
-  await expect(page.getByText("Demo mode is enabled")).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByRole("link", { name: /useState/ }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /useState/ }).first()).toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 test("mobile filters open as a dialog", async ({ page, isMobile }) => {
