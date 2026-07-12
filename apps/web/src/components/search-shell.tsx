@@ -196,7 +196,7 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
 
         <div className="mt-4 flex min-h-7 items-center justify-between gap-3 text-sm text-muted">
           <h2 className="outline-none" ref={resultsHeadingRef} tabIndex={-1}>
-            {results.totalHits > 0 ? <><strong className="font-semibold text-ink">{results.totalHits.toLocaleString()}</strong> {results.totalHits === 1 ? "result" : "results"} <span className="text-slate-400">in {results.processingTimeMs}ms</span></> : state.q ? `Results for “${state.q}”` : "Search results"}
+            {results.totalHits > 0 ? <><strong className="font-semibold text-ink">{results.totalHits.toLocaleString()}</strong> {results.totalHits === 1 ? "result" : "results"} <span className="text-slate-600">in {results.processingTimeMs}ms</span></> : state.q ? `Results for “${state.q}”` : "Search results"}
           </h2>
           {(searchLoading || navigationPending) && hasResults ? <span className="inline-flex items-center gap-1.5 text-xs"><LoaderCircle aria-hidden className="h-3.5 w-3.5 animate-spin" />Updating</span> : null}
         </div>

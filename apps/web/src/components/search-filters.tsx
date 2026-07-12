@@ -45,7 +45,7 @@ function FilterList({
               />
               <span className="truncate">{option.label}</span>
             </span>
-            {option.count > 0 ? <span className="font-mono text-[11px] text-slate-400">{option.count.toLocaleString()}</span> : null}
+            {option.count > 0 ? <span className="font-mono text-[11px] text-slate-600">{option.count.toLocaleString()}</span> : null}
           </label>
         ))}
       </div>

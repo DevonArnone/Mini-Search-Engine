@@ -121,7 +121,7 @@ export default async function HomePage() {
             { icon: Search, title: "Retrieve", body: "Serve fast, explainable results." },
           ].map(({ icon: Icon, title, body }, index) => (
             <li className={`p-5 ${index ? "border-t border-line md:border-l md:border-t-0" : ""}`} key={title}>
-              <div className="flex items-center justify-between"><Icon aria-hidden className="h-5 w-5 text-teal-700" /><span className="font-mono text-xs text-slate-400">0{index + 1}</span></div>
+              <div className="flex items-center justify-between"><Icon aria-hidden className="h-5 w-5 text-teal-700" /><span className="font-mono text-xs text-slate-600">0{index + 1}</span></div>
               <h3 className="mt-6 font-semibold text-ink">{title}</h3><p className="mt-1.5 text-sm leading-6 text-muted">{body}</p>
             </li>
           ))}

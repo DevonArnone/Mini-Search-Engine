@@ -13,4 +13,3 @@
     "test:e2e": "npm --workspace apps/web run test:e2e"
   }
 }
-

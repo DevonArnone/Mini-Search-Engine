@@ -22,8 +22,8 @@ const DEMO_RESULT = {
   sourceName: "React Docs",
   contentType: "reference",
   sectionPath: "Reference > React > Hooks",
-  snippet: "useState lets you add state to a function component",
-  highlights: [],
+  snippet: "useState lets you add <script>alert('x')</script> state to a function component",
+  highlights: ["<em>useState</em> – React Reference"],
   publishedAt: null,
   lastUpdatedAt: null,
   language: "en",
@@ -80,7 +80,7 @@ vi.stubGlobal(
 describe("SearchShell", () => {
   it("renders search results from the API", async () => {
     render(<SearchShell />);
-    expect(await screen.findByText("useState – React Reference")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /useState.*React Reference/ })).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.tagName === "H2" && element.textContent === "1 result in 12ms")).toBeInTheDocument();
   });
 
@@ -94,5 +94,18 @@ describe("SearchShell", () => {
   it("shows code example count", async () => {
     render(<SearchShell />);
     expect(await screen.findByText(/4 code examples/)).toBeInTheDocument();
+  });
+
+  it("renders search highlights without injecting source markup", async () => {
+    const { container } = render(<SearchShell />);
+    expect(await screen.findByText("useState", { selector: "mark" })).toBeInTheDocument();
+    expect(container.querySelector("script")).toBeNull();
+    expect(screen.getByText(/alert\('x'\)/)).toBeInTheDocument();
+  });
+
+  it("preserves a source prefilter", async () => {
+    render(<SearchShell initialSource="react" />);
+    await screen.findByText("useState", { selector: "mark" });
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("source=react"), expect.any(Object));
   });
 });

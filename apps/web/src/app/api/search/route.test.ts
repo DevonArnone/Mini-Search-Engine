@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 
+import { ServiceUnavailableError } from "@/lib/api";
+
 const runSearch = vi.fn();
 const query = vi.fn();
 
@@ -91,5 +93,22 @@ describe("GET /api/search", () => {
         updatedWithin: undefined,
       }),
     );
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("returns structured validation errors", async () => {
+    const { GET } = await import("./route");
+    const response = await GET(new NextRequest("http://localhost:3000/api/search?page=0&limit=100"));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: { code: "invalid_request" } });
+    expect(runSearch).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when the search service is unavailable", async () => {
+    runSearch.mockRejectedValue(new ServiceUnavailableError("search"));
+    const { GET } = await import("./route");
+    const response = await GET(new NextRequest("http://localhost:3000/api/search?q=hooks"));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: { code: "search_unavailable", message: "Search is temporarily unavailable. Please try again." } });
   });
 });

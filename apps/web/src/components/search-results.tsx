@@ -77,7 +77,7 @@ export function ResultCard({ result, rank, onTrackClick }: { result: SearchResul
             {result.codeBlockCount > 0 ? <span className="inline-flex items-center gap-1"><Braces aria-hidden className="h-3.5 w-3.5" />{result.codeBlockCount} code {result.codeBlockCount === 1 ? "example" : "examples"}</span> : null}
             {updated ? <span className="inline-flex items-center gap-1"><Clock3 aria-hidden className="h-3.5 w-3.5" />{updated}</span> : null}
             {result.whyMatched.length > 0 ? <span>Matched in {result.whyMatched.slice(0, 3).join(", ")}</span> : null}
-            <span className="ml-auto font-mono text-[10px] text-slate-400">#{rank}</span>
+            <span className="ml-auto font-mono text-[10px] text-slate-600">#{rank}</span>
           </div>
         </div>
       </div>

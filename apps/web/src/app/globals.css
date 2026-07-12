@@ -113,7 +113,7 @@ em {
   }
 
   .control {
-    @apply min-h-10 rounded-md border border-line-strong bg-white px-3 text-sm text-ink shadow-sm outline-none transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100;
+    @apply min-h-10 rounded-md border border-line-strong bg-white px-3 text-sm text-ink shadow-sm outline-none transition-colors placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100;
   }
 
   .badge {
