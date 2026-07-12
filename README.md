@@ -98,6 +98,12 @@ pip install -r services/crawler/requirements.txt
 bash scripts/local-demo-10k.sh
 ```
 
+Remove only the synthetic benchmark corpus while keeping crawled documents:
+
+```bash
+python services/crawler/scripts/clear_demo_corpus.py
+```
+
 Stop and remove local data:
 
 ```bash

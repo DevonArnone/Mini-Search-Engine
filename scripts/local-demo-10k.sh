@@ -28,5 +28,8 @@ Verification:
   bash scripts/benchmark-search.sh
 
 Cleanup:
+  python services/crawler/scripts/clear_demo_corpus.py
+
+Remove every local service and volume:
   docker compose down -v
 EOF

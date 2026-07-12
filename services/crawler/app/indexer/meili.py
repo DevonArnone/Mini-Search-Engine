@@ -124,3 +124,11 @@ def batch_index(documents: list[dict[str, Any]]) -> int:
     client = get_client()
     _wait_for_task(client, client.index(settings.meili_index_name).add_documents(documents))
     return len(documents)
+
+
+def delete_documents_by_filter(filter_expression: str) -> None:
+    client = get_client()
+    task = client.index(settings.meili_index_name).delete_documents(
+        filter=filter_expression
+    )
+    _wait_for_task(client, task)
