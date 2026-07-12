@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 
 import { SearchShell } from "@/components/search-shell";
 
-const searchParams = new URLSearchParams();
+const searchParams = new URLSearchParams("q=state");
 const replace = vi.fn();
 const router = { replace };
 
@@ -81,7 +81,7 @@ describe("SearchShell", () => {
   it("renders search results from the API", async () => {
     render(<SearchShell />);
     expect(await screen.findByText("useState – React Reference")).toBeInTheDocument();
-    expect(screen.getByText("1 result in 12ms")).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.tagName === "H2" && element.textContent === "1 result in 12ms")).toBeInTheDocument();
   });
 
   it("shows source badge and content type", async () => {

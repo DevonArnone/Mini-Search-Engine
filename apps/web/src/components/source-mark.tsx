@@ -1,3 +1,5 @@
+import React from "react";
+
 import { SOURCE_BY_SLUG } from "@/lib/sources";
 
 const SOURCE_STYLES: Record<string, string> = {

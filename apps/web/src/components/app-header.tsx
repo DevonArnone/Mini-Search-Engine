@@ -3,7 +3,7 @@
 import { BarChart3, Code2, Database, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import React, { useState } from "react";
 
 const NAV_ITEMS = [
   { href: "/search", label: "Search", icon: Search },
