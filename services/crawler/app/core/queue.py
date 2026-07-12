@@ -21,7 +21,25 @@ def enqueue_url(
             """
             INSERT INTO crawl_queue (url, normalized_url, domain, depth, source_url, priority, source_slug)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (normalized_url) DO NOTHING
+            ON CONFLICT (normalized_url) DO UPDATE SET
+                source_slug = COALESCE(crawl_queue.source_slug, EXCLUDED.source_slug),
+                depth = LEAST(crawl_queue.depth, EXCLUDED.depth),
+                priority = LEAST(crawl_queue.priority, EXCLUDED.priority),
+                status = CASE
+                    WHEN crawl_queue.source_slug IS NULL AND EXCLUDED.source_slug IS NOT NULL
+                    THEN 'pending'
+                    ELSE crawl_queue.status
+                END,
+                scheduled_at = CASE
+                    WHEN crawl_queue.source_slug IS NULL AND EXCLUDED.source_slug IS NOT NULL
+                    THEN NOW()
+                    ELSE crawl_queue.scheduled_at
+                END,
+                processed_at = CASE
+                    WHEN crawl_queue.source_slug IS NULL AND EXCLUDED.source_slug IS NOT NULL
+                    THEN NULL
+                    ELSE crawl_queue.processed_at
+                END
             """,
             (url, normalized_url, domain, depth, source_url, priority, source_slug),
         )
