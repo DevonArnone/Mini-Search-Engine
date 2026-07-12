@@ -5,40 +5,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#111827",
-        mist: "#eef7ff",
-        ember: "#e14b35",
-        ocean: "#0f8b8d",
-        sand: "#f8fbff",
+        canvas: "#f5f7f8",
+        ink: "#172126",
+        muted: "#5f6b73",
+        line: "#dde2e5",
+        "line-strong": "#c8d0d4",
+        teal: {
+          50: "#eff9f7",
+          100: "#dff3ef",
+          200: "#bfe7e0",
+          300: "#8fd4ca",
+          400: "#55b9ac",
+          500: "#2d9a90",
+          600: "#16837b",
+          700: "#0c766e",
+          800: "#105e59",
+          900: "#104e4a",
+        },
       },
       fontFamily: {
-        sans: ["'Space Grotesk'", "ui-sans-serif", "system-ui"],
-        display: ["'Sora'", "ui-sans-serif", "system-ui"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono: ["SFMono-Regular", "Consolas", "Liberation Mono", "monospace"],
+        display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        premium: "0 24px 80px rgba(15, 23, 42, 0.12)",
-        soft: "0 14px 40px rgba(15, 23, 42, 0.08)",
-        glow: "0 24px 90px rgba(20, 184, 166, 0.22)",
-        "inner-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.78)",
-      },
-      keyframes: {
-        "rise-in": {
-          "0%": { opacity: "0", transform: "translateY(18px) scale(0.98)" },
-          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
-        },
-        shimmer: {
-          "0%": { transform: "translateX(-110%)" },
-          "100%": { transform: "translateX(110%)" },
-        },
-      },
-      animation: {
-        "rise-in": "rise-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
-        float: "float 5s ease-in-out infinite",
-        shimmer: "shimmer 2.8s ease-in-out infinite",
+        panel: "0 1px 2px rgba(23, 33, 38, 0.05), 0 8px 24px rgba(23, 33, 38, 0.04)",
+        card: "0 1px 2px rgba(23, 33, 38, 0.05)",
       },
     },
   },

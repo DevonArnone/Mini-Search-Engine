@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mini-search/shared-types": "0.0.1",
+    "lucide-react": "^1.24.0",
     "meilisearch": "^0.51.0",
     "next": "^15.2.0",
     "pg": "^8.13.3",
