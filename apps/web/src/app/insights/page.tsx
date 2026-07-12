@@ -34,10 +34,10 @@ function formatNumber(n: number) {
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <article className="rounded-[1.75rem] border border-orange-200 bg-white/80 p-5 shadow-sm">
-      <p className="text-sm text-stone-500">{label}</p>
-      <p className="mt-3 font-display text-3xl font-semibold text-ink">{typeof value === "number" ? formatNumber(value) : value}</p>
-      {sub ? <p className="mt-1 text-xs text-stone-400">{sub}</p> : null}
+    <article className="metric-card">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-3 font-display text-3xl font-bold text-ink">{typeof value === "number" ? formatNumber(value) : value}</p>
+      {sub ? <p className="mt-1 text-xs text-slate-400">{sub}</p> : null}
     </article>
   );
 }
@@ -54,39 +54,41 @@ function QueryTable({
   emptyMessage: string;
 }) {
   return (
-    <section className="rounded-3xl border border-orange-200 bg-white/80 p-5 shadow-sm">
-      <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
-      <p className="mt-1 text-sm text-stone-500">{description}</p>
+    <section className="premium-card p-5">
+      <h2 className="font-display text-lg font-bold text-ink">{title}</h2>
+      <p className="mt-1 text-sm text-slate-500">{description}</p>
       {rows.length ? (
-        <table className="mt-4 w-full text-sm">
-          <thead>
-            <tr className="border-b border-orange-100 text-xs text-stone-400">
-              <th className="pb-2 text-left font-normal">Query</th>
-              <th className="pb-2 text-right font-normal">Searches</th>
-              <th className="pb-2 text-right font-normal">Avg results</th>
-              <th className="pb-2 text-right font-normal">Avg latency</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr className="border-b border-orange-50 last:border-0" key={row.query}>
-                <td className="py-2.5">
-                  <Link
-                    className="text-ocean hover:underline"
-                    href={`/search?q=${encodeURIComponent(row.query)}`}
-                  >
-                    {row.query}
-                  </Link>
-                </td>
-                <td className="py-2.5 text-right text-stone-600">{formatNumber(row.count)}</td>
-                <td className="py-2.5 text-right text-stone-600">{formatNumber(row.avgResults)}</td>
-                <td className="py-2.5 text-right text-stone-600">{row.avgLatencyMs}ms</td>
+        <div className="table-premium mt-4 overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr className="border-b border-slate-200/80 bg-slate-50/60 text-xs text-slate-400">
+                <th className="px-4 py-3 text-left font-semibold">Query</th>
+                <th className="px-4 py-3 text-right font-semibold">Searches</th>
+                <th className="px-4 py-3 text-right font-semibold">Avg results</th>
+                <th className="px-4 py-3 text-right font-semibold">Avg latency</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr className="border-b border-slate-100/80 last:border-0 hover:bg-white/70" key={row.query}>
+                  <td className="px-4 py-3">
+                    <Link
+                      className="font-semibold text-ocean hover:underline"
+                      href={`/search?q=${encodeURIComponent(row.query)}`}
+                    >
+                      {row.query}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-600">{formatNumber(row.count)}</td>
+                  <td className="px-4 py-3 text-right text-slate-600">{formatNumber(row.avgResults)}</td>
+                  <td className="px-4 py-3 text-right text-slate-600">{row.avgLatencyMs}ms</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p className="mt-6 text-center text-sm text-stone-400">{emptyMessage}</p>
+        <p className="mt-6 text-center text-sm text-slate-400">{emptyMessage}</p>
       )}
     </section>
   );
@@ -104,13 +106,13 @@ export default async function InsightsPage() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-12">
-      <div className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-ocean">Analytics</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink">
+    <main id="main-content" className="section-shell py-12">
+      <div className="mb-8 overflow-hidden rounded-[2rem] border border-white/70 bg-white/[0.72] p-6 shadow-premium backdrop-blur-xl sm:p-8">
+        <p className="section-kicker">Analytics</p>
+        <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
           Search insights
         </h1>
-        <p className="mt-2 text-stone-500">
+        <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
           Usage patterns, quality signals, and relevance gaps — {insights.period}.
         </p>
       </div>
@@ -150,9 +152,9 @@ export default async function InsightsPage() {
 
         {/* Top sources */}
         {insights.topSources.length > 0 ? (
-          <section className="rounded-3xl border border-orange-200 bg-white/80 p-5 shadow-sm">
-            <h2 className="font-display text-lg font-semibold text-ink">Most-clicked sources</h2>
-            <p className="mt-1 text-sm text-stone-500">
+          <section className="premium-card p-5">
+            <h2 className="font-display text-lg font-bold text-ink">Most-clicked sources</h2>
+            <p className="mt-1 text-sm text-slate-500">
               Sources that receive the most result clicks, by click-through count.
             </p>
             <div className="mt-4 space-y-3">
@@ -161,18 +163,18 @@ export default async function InsightsPage() {
                 const pct = Math.round((source.count / max) * 100);
                 return (
                   <div key={source.value}>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between gap-4 text-sm">
                       <Link
-                        className="text-ocean hover:underline"
+                        className="font-semibold text-ocean hover:underline"
                         href={`/sources/${source.value}`}
                       >
                         {SOURCE_NAMES[source.value] ?? source.value}
                       </Link>
-                      <span className="text-stone-500">{formatNumber(source.count)} clicks</span>
+                      <span className="text-slate-500">{formatNumber(source.count)} clicks</span>
                     </div>
-                    <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-orange-50">
+                    <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-ocean"
+                        className="h-full rounded-full bg-gradient-to-r from-ocean to-indigo-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -185,13 +187,13 @@ export default async function InsightsPage() {
 
         {/* No data state */}
         {insights.totalSearches === 0 ? (
-          <div className="rounded-3xl border border-dashed border-orange-200 bg-white/60 p-10 text-center">
-            <h3 className="font-display text-xl text-ink">No analytics data yet</h3>
-            <p className="mt-2 text-sm text-stone-500">
+          <div className="rounded-3xl border border-dashed border-teal-200 bg-white/70 p-10 text-center shadow-soft backdrop-blur-xl">
+            <h3 className="font-display text-xl font-bold text-ink">No analytics data yet</h3>
+            <p className="mt-2 text-sm text-slate-500">
               Search a few queries to start generating insights.
             </p>
             <Link
-              className="mt-4 inline-flex rounded-full bg-ink px-5 py-2 text-sm text-white hover:opacity-80"
+              className="btn-primary mt-4 px-5 py-2"
               href="/search"
             >
               Go to search

@@ -126,26 +126,27 @@ export default async function SourcePage({ params }: Props) {
   if (!source) notFound();
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-8">
+    <main id="main-content" className="page-shell">
       {/* Header */}
-      <div className="mb-8">
-        <Link className="text-sm text-stone-400 hover:text-ink" href="/sources">
+      <div className="mb-8 rounded-[2rem] border border-white/70 bg-white/[0.72] p-6 shadow-premium backdrop-blur-xl sm:p-8">
+        <Link className="text-sm font-medium text-slate-400 hover:text-ink" href="/sources">
           ← All sources
         </Link>
-        <div className="mt-4 flex items-start gap-4">
+        <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-start">
           <span
-            className={`inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-bold ring-1 ${source.color}`}
+            className={`inline-flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-base font-bold shadow-soft ring-1 ${source.color}`}
           >
             {source.icon}
           </span>
           <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
+            <p className="section-kicker">Source workspace</p>
+            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
               {source.name}
             </h1>
-            <p className="mt-2 max-w-2xl text-stone-500">{source.description}</p>
+            <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">{source.description}</p>
             <div className="mt-3 flex flex-wrap gap-3">
               <a
-                className="rounded-full border border-orange-200 bg-white px-3 py-1 text-xs text-stone-600 hover:bg-orange-50"
+                className="btn-secondary px-4 py-2 text-xs"
                 href={source.homeUrl}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -160,7 +161,7 @@ export default async function SourcePage({ params }: Props) {
         <div className="mt-5 flex flex-wrap gap-2">
           {source.topics.map((topic) => (
             <Link
-              className="rounded-full border border-orange-100 bg-white px-3 py-1 text-xs text-stone-600 transition-colors hover:bg-orange-50"
+              className="chip"
               href={`/search?q=${encodeURIComponent(topic)}&source=${slug}`}
               key={topic}
             >
@@ -171,10 +172,10 @@ export default async function SourcePage({ params }: Props) {
 
         {/* Sample queries */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-stone-400">Popular searches:</span>
+          <span className="text-xs font-semibold text-slate-400">Popular searches:</span>
           {source.sampleQueries.map((q) => (
             <Link
-              className="rounded-full bg-orange-50 px-3 py-1 text-xs text-orange-700 transition-colors hover:bg-orange-100"
+              className="chip"
               href={`/search?q=${encodeURIComponent(q)}&source=${slug}`}
               key={q}
             >
@@ -187,7 +188,7 @@ export default async function SourcePage({ params }: Props) {
       {/* Scoped search shell */}
       <Suspense
         fallback={
-          <div className="rounded-3xl border border-orange-200 bg-white/80 p-8 text-center text-sm text-stone-500">
+          <div className="premium-card p-8 text-center text-sm text-slate-500">
             Loading search…
           </div>
         }

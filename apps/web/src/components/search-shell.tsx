@@ -52,11 +52,11 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const SOURCE_COLORS: Record<string, string> = {
-  mdn: "bg-blue-100 text-blue-800",
-  react: "bg-cyan-100 text-cyan-800",
-  nextjs: "bg-stone-100 text-stone-800",
-  typescript: "bg-indigo-100 text-indigo-800",
-  postgresql: "bg-teal-100 text-teal-800",
+  mdn: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+  react: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
+  nextjs: "bg-slate-50 text-slate-700 ring-1 ring-slate-200",
+  typescript: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200",
+  postgresql: "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
 };
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
@@ -119,7 +119,7 @@ function SearchBar({
       <div className="relative">
         <svg
           aria-hidden
-          className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+          className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -133,7 +133,7 @@ function SearchBar({
           aria-controls={openSuggestions ? "suggestions-list" : undefined}
           aria-expanded={openSuggestions}
           aria-label="Search developer documentation"
-          className="w-full rounded-2xl border border-orange-200 bg-sand py-3 pl-11 pr-4 text-ink outline-none ring-ocean focus:ring-2 placeholder:text-stone-400"
+          className="input-premium w-full rounded-2xl py-3 pl-11 pr-4"
           onChange={(event) => {
             const nextQuery = event.target.value;
             setQuery(nextQuery);
@@ -162,7 +162,7 @@ function SearchBar({
       </div>
       {openSuggestions ? (
         <ul
-          className="absolute z-20 mt-2 w-full rounded-2xl border border-orange-100 bg-white p-2 shadow-xl"
+          className="absolute z-20 mt-2 w-full rounded-2xl border border-white/70 bg-white/95 p-2 shadow-premium backdrop-blur-xl"
           id="suggestions-list"
           role="listbox"
         >
@@ -170,7 +170,7 @@ function SearchBar({
             <li key={suggestion} role="option" aria-selected={focusedIndex === index}>
               <button
                 className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm ${
-                  focusedIndex === index ? "bg-orange-50 text-ink" : "text-stone-700 hover:bg-orange-50"
+                  focusedIndex === index ? "bg-teal-50 text-ink" : "text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => {
                   setQuery(suggestion);
@@ -181,7 +181,7 @@ function SearchBar({
               >
                 <svg
                   aria-hidden
-                  className="h-3.5 w-3.5 text-stone-400"
+                  className="h-3.5 w-3.5 text-slate-400"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -246,13 +246,13 @@ function FilterChips({
     <div className="flex flex-wrap items-center gap-2">
       {chips.map((chip) => (
         <span
-          className="inline-flex items-center gap-1.5 rounded-full bg-ocean/10 px-3 py-1 text-xs font-medium text-ocean"
+          className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/70 bg-teal-50/80 px-3 py-1 text-xs font-semibold text-ocean"
           key={chip.label}
         >
           {chip.label}
           <button
             aria-label={`Remove ${chip.label} filter`}
-            className="hover:text-ink"
+            className="rounded-full px-1 hover:bg-white hover:text-ink"
             onClick={chip.onRemove}
             type="button"
           >
@@ -261,7 +261,7 @@ function FilterChips({
         </span>
       ))}
       <button
-        className="text-xs text-stone-500 hover:text-ink"
+        className="text-xs font-medium text-slate-500 hover:text-ink"
         onClick={() =>
           setState((c) => ({
             ...c,
@@ -298,11 +298,11 @@ function FilterSidebar({
   setState: React.Dispatch<React.SetStateAction<SearchState>>;
 }) {
   return (
-    <aside className="rounded-3xl border border-orange-200 bg-white/80 p-5 shadow-sm">
+    <aside className="premium-card p-5 lg:sticky lg:top-24 lg:self-start">
       <div className="mb-5 flex items-center justify-between">
-        <h2 className="font-display text-base font-semibold text-ink">Filters</h2>
+        <h2 className="font-display text-base font-bold text-ink">Filters</h2>
         <button
-          className="text-xs text-ocean hover:underline"
+          className="rounded-full px-2 py-1 text-xs font-semibold text-ocean hover:bg-teal-50"
           onClick={() =>
             setState((c) => ({
               ...c,
@@ -350,17 +350,17 @@ function FilterSidebar({
 
       {/* Updated recently */}
       <div className="mb-5">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
           Updated within
         </h3>
         <div className="space-y-1.5">
           {(["7d", "30d", "90d"] as const).map((period) => {
             const labels = { "7d": "7 days", "30d": "30 days", "90d": "90 days" };
             return (
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700" key={period}>
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50" key={period}>
                 <input
                   checked={state.updatedWithin === period}
-                  className="accent-ocean"
+                  className="h-4 w-4 accent-ocean"
                   onChange={() =>
                     setState((c) => ({
                       ...c,
@@ -406,25 +406,25 @@ function FilterSection({
   if (!options.length) return null;
   return (
     <div className="mb-5">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
         {title}
       </h3>
       <div className="space-y-1.5">
         {options.map((option) => (
           <label
-            className="flex cursor-pointer items-center justify-between gap-2 text-sm"
+            className="flex cursor-pointer items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-sm transition hover:bg-slate-50"
             key={option.value}
           >
-            <span className="flex items-center gap-2 text-stone-700">
+            <span className="flex items-center gap-2 text-slate-700">
               <input
                 checked={selected.includes(option.value)}
-                className="accent-ocean"
+                className="h-4 w-4 rounded accent-ocean"
                 onChange={() => onToggle(option.value)}
                 type="checkbox"
               />
               {option.label ?? option.value}
             </span>
-            <span className="text-xs text-stone-400">{option.count}</span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{option.count}</span>
           </label>
         ))}
       </div>
@@ -454,7 +454,7 @@ function ResultCard({
     : null;
 
   return (
-    <article className="rounded-[2rem] border border-orange-200 bg-white/85 p-5 shadow-sm transition-shadow hover:shadow-md">
+    <article className="premium-card premium-card-hover p-5">
       {/* Source + content type badges */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {badge ? (
@@ -463,12 +463,12 @@ function ResultCard({
           </span>
         ) : null}
         {result.contentType ? (
-          <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs text-orange-700">
+          <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-rose-100">
             {CONTENT_TYPE_LABELS[result.contentType] ?? result.contentType}
           </span>
         ) : null}
         {result.codeBlockCount > 0 ? (
-          <span className="rounded-full bg-stone-50 px-2.5 py-0.5 text-xs text-stone-500">
+          <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs text-slate-500 ring-1 ring-slate-100">
             {result.codeBlockCount} code {result.codeBlockCount === 1 ? "example" : "examples"}
           </span>
         ) : null}
@@ -476,13 +476,13 @@ function ResultCard({
 
       {/* Section path / breadcrumb */}
       {result.sectionPath ? (
-        <p className="mb-1 truncate text-xs text-stone-400">{result.sectionPath}</p>
+        <p className="mb-1 truncate text-xs font-medium text-slate-400">{result.sectionPath}</p>
       ) : null}
 
-      <h3 className="font-display text-lg font-semibold leading-snug text-ink">{result.title}</h3>
+      <h3 className="font-display text-lg font-bold leading-snug text-ink">{result.title}</h3>
 
       <a
-        className="mt-1 block truncate text-xs text-ember hover:underline"
+        className="mt-1 block truncate text-xs font-medium text-ember hover:underline"
         href={result.url}
         onClick={onTrackClick}
         rel="noopener noreferrer"
@@ -492,7 +492,7 @@ function ResultCard({
       </a>
 
       <p
-        className="mt-2.5 text-sm leading-6 text-stone-600"
+        className="mt-2.5 text-sm leading-6 text-slate-600"
         dangerouslySetInnerHTML={{ __html: result.snippet }}
       />
 
@@ -501,7 +501,7 @@ function ResultCard({
         <div className="flex flex-wrap gap-2">
           {result.tags.slice(0, 4).map((tag) => (
             <span
-              className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs text-teal-700"
+              className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700 ring-1 ring-teal-100"
               key={tag}
             >
               {tag}
@@ -510,13 +510,13 @@ function ResultCard({
         </div>
         <div className="flex items-center gap-3">
           {updatedDate ? (
-            <span className="text-xs text-stone-400">Updated {updatedDate}</span>
+            <span className="text-xs text-slate-400">Updated {updatedDate}</span>
           ) : null}
           {freshness ? (
             <span className={`text-xs font-medium ${freshness.color}`}>{freshness.text}</span>
           ) : null}
           {result.whyMatched.length > 0 ? (
-            <span className="text-xs text-stone-400">
+            <span className="text-xs text-slate-400">
               Matched in {result.whyMatched.join(", ")}
             </span>
           ) : null}
@@ -534,15 +534,15 @@ function SkeletonList() {
   return (
     <div className="space-y-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div className="rounded-[2rem] border border-orange-200 bg-white/80 p-5" key={i}>
+        <div className="premium-card overflow-hidden p-5" key={i}>
           <div className="flex gap-2">
-            <div className="h-5 w-14 animate-pulse rounded-full bg-orange-100" />
-            <div className="h-5 w-20 animate-pulse rounded-full bg-orange-100" />
+            <div className="h-5 w-14 animate-pulse rounded-full bg-teal-100" />
+            <div className="h-5 w-20 animate-pulse rounded-full bg-indigo-100" />
           </div>
-          <div className="mt-3 h-5 w-3/4 animate-pulse rounded bg-orange-100" />
-          <div className="mt-2 h-3.5 w-64 animate-pulse rounded bg-orange-50" />
-          <div className="mt-3 h-4 w-full animate-pulse rounded bg-orange-50" />
-          <div className="mt-1.5 h-4 w-5/6 animate-pulse rounded bg-orange-50" />
+          <div className="mt-3 h-5 w-3/4 animate-pulse rounded bg-slate-100" />
+          <div className="mt-2 h-3.5 w-64 max-w-full animate-pulse rounded bg-slate-100" />
+          <div className="mt-3 h-4 w-full animate-pulse rounded bg-slate-100" />
+          <div className="mt-1.5 h-4 w-5/6 animate-pulse rounded bg-slate-100" />
         </div>
       ))}
     </div>
@@ -559,22 +559,22 @@ function NoResults({
   onSuggestionClick: (q: string) => void;
 }) {
   return (
-    <div className="rounded-[2rem] border border-dashed border-orange-300 bg-white/60 p-10 text-center">
-      <h3 className="font-display text-2xl text-ink">No results found</h3>
-      <p className="mt-2 text-sm text-stone-500">
+    <div className="rounded-[2rem] border border-dashed border-teal-200 bg-white/70 p-10 text-center shadow-soft backdrop-blur-xl">
+      <h3 className="font-display text-2xl font-bold text-ink">No results found</h3>
+      <p className="mt-2 text-sm text-slate-500">
         {query
           ? `No documentation matched "${query}". Try a broader term or remove a filter.`
           : "Start typing to search across developer documentation."}
       </p>
       {suggestions && suggestions.length > 0 ? (
         <div className="mt-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Try one of these
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {suggestions.map((s) => (
               <button
-                className="rounded-full border border-orange-200 bg-white px-3 py-1.5 text-sm text-stone-700 hover:border-orange-300 hover:bg-orange-50"
+                className="chip px-3 py-1.5 text-sm"
                 key={s}
                 onClick={() => onSuggestionClick(s)}
                 type="button"
@@ -722,14 +722,14 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
     Boolean(state.updatedWithin);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
       {/* Sidebar */}
       <FilterSidebar filters={filters} state={state} setState={setState} />
 
       {/* Main content */}
       <section className="min-w-0 space-y-4">
         {/* Sticky search bar */}
-        <div className="sticky top-[60px] z-30 rounded-[2rem] border border-orange-200 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+        <div className="sticky top-[68px] z-30 rounded-[2rem] border border-white/70 bg-white/[0.86] p-4 shadow-premium backdrop-blur-xl">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <SearchBar
               query={state.q}
@@ -738,7 +738,7 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
             />
             <select
               aria-label="Sort results"
-              className="rounded-2xl border border-orange-200 bg-sand px-4 py-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ocean"
+              className="input-premium rounded-2xl px-4 py-3 text-sm"
               onChange={(e) =>
                 setState((c) => ({ ...c, sort: e.target.value as SearchState["sort"], page: 1 }))
               }
@@ -759,25 +759,25 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
         </div>
 
         {/* Results meta */}
-        <div className="flex items-center justify-between px-1 text-sm text-stone-500">
+        <div className="flex items-center justify-between px-1 text-sm text-slate-500">
           <p>
             {results.totalHits > 0
               ? `${results.totalHits.toLocaleString()} result${results.totalHits === 1 ? "" : "s"} in ${results.processingTimeMs}ms`
               : "Ready to search"}
           </p>
-          {isPending ? <p className="text-xs text-ocean">Updating…</p> : null}
+          {isPending ? <p className="text-xs font-semibold text-ocean">Updating…</p> : null}
         </div>
 
         {/* Demo mode warning */}
         {results.mode === "demo" ? (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800">
+          <div className="rounded-3xl border border-amber-200 bg-amber-50/85 px-4 py-3 text-sm font-medium text-amber-800 shadow-soft">
             {results.warning ?? "Demo mode — Meilisearch is unavailable. Showing bundled sample results."}
           </div>
         ) : null}
 
         {/* Error */}
         {error ? (
-          <div className="rounded-3xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-900">
+          <div className="rounded-3xl border border-rose-200 bg-rose-50/85 px-4 py-3 text-sm font-medium text-rose-900 shadow-soft">
             {error}
           </div>
         ) : null}
@@ -805,18 +805,18 @@ export function SearchShell({ initialSource }: { initialSource?: string }) {
 
         {/* Pagination */}
         {results.totalHits > 0 ? (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <button
-              className="rounded-full border border-orange-200 bg-white px-4 py-2 text-sm transition-colors hover:bg-orange-50 disabled:opacity-40"
+              className="btn-secondary px-4 py-2 disabled:pointer-events-none disabled:opacity-40"
               disabled={state.page <= 1}
               onClick={() => setState((c) => ({ ...c, page: c.page - 1 }))}
               type="button"
             >
               ← Previous
             </button>
-            <p className="text-sm text-stone-500">Page {state.page}</p>
+            <p className="text-sm font-medium text-slate-500">Page {state.page}</p>
             <button
-              className="rounded-full border border-orange-200 bg-white px-4 py-2 text-sm transition-colors hover:bg-orange-50 disabled:opacity-40"
+              className="btn-secondary px-4 py-2 disabled:pointer-events-none disabled:opacity-40"
               disabled={results.results.length < state.limit}
               onClick={() => setState((c) => ({ ...c, page: c.page + 1 }))}
               type="button"
