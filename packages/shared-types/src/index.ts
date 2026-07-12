@@ -82,6 +82,7 @@ export interface SourceInfo {
 }
 
 export interface SourcesResponse {
+  mode: "live" | "demo" | "unavailable";
   sources: SourceInfo[];
 }
 
