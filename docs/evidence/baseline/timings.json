@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-10-07T17:44:31.276Z",
+  "commit": "8249c02",
+  "backend": "meilisearch v1.11 (delegated retrieval)",
+  "note": "Pre-change baseline. Analytics INSERT is awaited on the response path. Sequential requests, concurrency 1, 100 warm-up + 500 measured.",
+  "corpus": {
+    "indexedDocuments": 387,
+    "kind": "real crawl, 387 documents"
+  },
+  "queries": [
+    "useState",
+    "array",
+    "index",
+    "select",
+    "server components",
+    "type narrowing",
+    "window functions",
+    "promise",
+    "generics",
+    "zzzznotfound"
+  ],
+  "httpMs": {
+    "mean": 22.63,
+    "p50": 21.62,
+    "p95": 41.94
+  },
+  "engineReportedMs": {
+    "mean": 13.09,
+    "p50": 13,
+    "p95": 30
+  },
+  "throughputRps": 44.2,
+  "errors": 0,
+  "hardware": {
+    "cpu": "Apple M1 Pro",
+    "cores": 10,
+    "memGb": 16
+  },
+  "versions": {
+    "node": "v25.2.1"
+  }
+}
