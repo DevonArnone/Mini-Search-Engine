@@ -9,6 +9,7 @@ import type {
 import { getDocumentsIndex } from "@/lib/meili";
 import { ServiceUnavailableError, withTimeout } from "@/lib/api";
 import { env } from "@/lib/env";
+import { getNativeEngine } from "@/lib/native-engine";
 
 export interface SearchArgs {
   q: string;
@@ -230,9 +231,11 @@ function runDemoSearch(args: SearchArgs): SearchResponse {
     page: args.page,
     limit: args.limit,
     totalHits: filtered.length,
-    processingTimeMs: 12,
+    processingTimeMs: 0,
     mode: "demo",
-    warning: "Showing bundled demo results because Meilisearch is unavailable.",
+    backend: "demo",
+    indexRevision: null,
+    warning: "Showing bundled demo results because the search index is unavailable.",
     recoverySuggestions: filtered.length === 0 ? buildRecoverySuggestions(args.q) : undefined,
     results: pageItems.map((doc) => ({
       id: doc.id,
@@ -257,11 +260,51 @@ function runDemoSearch(args: SearchArgs): SearchResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Native engine (default backend)
+// ---------------------------------------------------------------------------
+
+async function runNativeSearch(args: SearchArgs): Promise<SearchResponse> {
+  const reply = await getNativeEngine().search({
+    q: args.q,
+    page: args.page,
+    limit: args.limit,
+    source: args.source,
+    contentType: args.contentType,
+    domain: args.domain,
+    language: args.language,
+    tags: args.tags,
+    sort: args.sort,
+    from: args.from ?? null,
+    to: args.to ?? null,
+    updatedWithin: args.updatedWithin ?? null,
+  });
+  return {
+    query: args.q,
+    page: args.page,
+    limit: args.limit,
+    totalHits: reply.totalHits,
+    processingTimeMs: reply.processingTimeMs,
+    mode: "live",
+    backend: "native",
+    indexRevision: reply.indexRevision,
+    recoverySuggestions: reply.totalHits === 0 && args.q ? buildRecoverySuggestions(args.q) : undefined,
+    results: reply.hits.map((hit) => ({
+      ...hit,
+      contentType: hit.contentType as ContentType | null,
+      freshnessStatus: hit.freshnessStatus as SearchResult["freshnessStatus"],
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Live search
 // ---------------------------------------------------------------------------
 
+// The backend is fixed by SEARCH_BACKEND for the life of the process. A
+// failing backend surfaces as an error; it is never swapped for the other one.
 export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
   try {
+    if (env.searchBackend === "native") return await runNativeSearch(args);
     const index = getDocumentsIndex();
     const sort = buildSort(args.sort);
     const response = await withTimeout(index.search(args.q, {
@@ -315,6 +358,8 @@ export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
       totalHits,
       processingTimeMs: response.processingTimeMs,
       mode: "live",
+      backend: "meilisearch",
+      indexRevision: null,
       recoverySuggestions: totalHits === 0 && args.q ? buildRecoverySuggestions(args.q) : undefined,
       results,
     };
@@ -332,6 +377,7 @@ export async function runSearch(args: SearchArgs): Promise<SearchResponse> {
 export async function runAutocomplete(q: string) {
   if (!q) return [];
   try {
+    if (env.searchBackend === "native") return (await getNativeEngine().autocomplete(q)).suggestions;
     const response = await withTimeout(getDocumentsIndex().search(q, {
       limit: 8,
       attributesToRetrieve: ["title", "source_name", "content_type"],
@@ -362,6 +408,7 @@ export async function runAutocomplete(q: string) {
 
 export async function runFilterQuery(): Promise<FiltersResponse> {
   try {
+    if (env.searchBackend === "native") return { ...(await getNativeEngine().facets()), dateBuckets: [] };
     const response = await withTimeout(getDocumentsIndex().search("", {
       limit: 0,
       facets: ["source_slug", "content_type", "domain", "language", "tags"],
@@ -393,5 +440,58 @@ export async function runFilterQuery(): Promise<FiltersResponse> {
       tags: count(demoDocuments.flatMap((doc) => doc.tags)),
       dateBuckets: [],
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Engine health, for /api/status
+// ---------------------------------------------------------------------------
+
+export interface SearchEngineHealth {
+  healthy: boolean;
+  backend: "native" | "meilisearch";
+  indexUid: string;
+  indexRevision: string | null;
+  state?: string;
+  numberOfDocuments?: number;
+  diagnostics?: {
+    hydrationMs: number | null;
+    terms: number;
+    pendingBatches: number;
+    lastError: string | null;
+    rssBytes: number;
+    heapUsedBytes: number;
+    externalBytes: number;
+  };
+}
+
+export async function getSearchEngineHealth(): Promise<SearchEngineHealth> {
+  if (env.searchBackend === "native") {
+    try {
+      const status = await getNativeEngine().status();
+      return {
+        healthy: status.state === "ready",
+        backend: "native",
+        indexUid: env.searchIndexDir,
+        indexRevision: status.indexRevision,
+        state: status.state,
+        ...(status.state === "ready" ? { numberOfDocuments: status.documents } : {}),
+        diagnostics: {
+          hydrationMs: status.hydrationMs === null ? null : Math.round(status.hydrationMs),
+          terms: status.terms,
+          pendingBatches: status.pendingBatches,
+          lastError: status.lastError,
+          ...status.memory,
+        },
+      };
+    } catch {
+      return { healthy: false, backend: "native", indexUid: env.searchIndexDir, indexRevision: null, state: "unavailable" };
+    }
+  }
+  try {
+    const stats = await withTimeout(getDocumentsIndex().getStats(), env.searchTimeoutMs, "search");
+    return { healthy: true, backend: "meilisearch", indexUid: env.meiliIndexName, indexRevision: null, numberOfDocuments: stats.numberOfDocuments };
+  } catch {
+    return { healthy: false, backend: "meilisearch", indexUid: env.meiliIndexName, indexRevision: null };
   }
 }

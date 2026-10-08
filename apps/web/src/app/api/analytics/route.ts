@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { apiError, validationError } from "@/lib/api";
 import { clickEventSchema } from "@/lib/api-schemas";
-import { withDb } from "@/lib/db";
+import { recordClick } from "@/lib/analytics";
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -17,17 +17,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const sessionId = request.cookies.get("devdocs_session")?.value ?? null;
-    await withDb((client) =>
-      client.query(
-        `INSERT INTO search_analytics
-           (search_id, event_type, session_id, query, filters, results_count, latency_ms, clicked_document_id, result_rank)
-         SELECT $1, 'result_click', $2, query, filters, results_count, latency_ms, $3, $4
-         FROM search_analytics
-         WHERE search_id = $1 AND event_type = 'search'
-         LIMIT 1`,
-        [parsed.data.searchId, sessionId, parsed.data.clickedDocumentId, parsed.data.resultRank],
-      ),
-    );
+    const recorded = await recordClick(parsed.data.searchId, sessionId, parsed.data.clickedDocumentId, parsed.data.resultRank);
+    if (!recorded) return apiError("unknown_search", "No search event matches this click.", 404);
     return NextResponse.json({ ok: true });
   } catch {
     return apiError("analytics_unavailable", "The analytics event could not be recorded.", 503);

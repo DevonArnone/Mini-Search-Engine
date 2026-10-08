@@ -2,7 +2,7 @@ import type { SourceInfo, StatusResponse } from "@mini-search/shared-types";
 
 import { withDb } from "@/lib/db";
 import { env } from "@/lib/env";
-import { getDocumentsIndex } from "@/lib/meili";
+import { getSearchEngineHealth } from "@/lib/search";
 import { getFallbackSources } from "@/lib/sources";
 
 interface DatabaseStatus {
@@ -47,10 +47,10 @@ async function getDatabaseStatus(): Promise<DatabaseStatus> {
         doc_count: string; crawl_status: string;
     }>(
       `SELECT sr.slug, sr.name, sr.description, sr.home_url, sr.authority_weight,
-              sr.crawl_cadence_hours, COALESCE(sr.last_successful_crawl_at, sr.last_crawled_at) AS last_crawled_at, sr.crawl_status,
+              sr.crawl_cadence_hours, COALESCE(counts.newest_fetch, sr.last_successful_crawl_at, sr.last_crawled_at) AS last_crawled_at, sr.crawl_status,
               COALESCE(counts.doc_count, 0)::text AS doc_count
        FROM source_registry sr
-       LEFT JOIN (SELECT source_slug, COUNT(*) AS doc_count FROM documents WHERE source_slug IS NOT NULL AND status = 'indexed' GROUP BY source_slug) counts
+       LEFT JOIN (SELECT source_slug, COUNT(*) AS doc_count, MAX(last_crawled_at) AS newest_fetch FROM documents WHERE source_slug IS NOT NULL AND status = 'indexed' GROUP BY source_slug) counts
          ON counts.source_slug = sr.slug
        ORDER BY sr.authority_weight DESC`,
     );
@@ -78,12 +78,12 @@ async function getDatabaseStatus(): Promise<DatabaseStatus> {
 }
 
 export async function getStatus(): Promise<StatusResponse> {
-  const [databaseResult, searchResult] = await Promise.allSettled([
-    getDatabaseStatus(),
-    getDocumentsIndex().getStats(),
+  const [databaseResult, searchEngine] = await Promise.all([
+    getDatabaseStatus().then((value) => value, () => null),
+    getSearchEngineHealth(),
   ]);
-  const database = databaseResult.status === "fulfilled" ? databaseResult.value : null;
-  const search = searchResult.status === "fulfilled" ? searchResult.value : null;
+  const database = databaseResult;
+  const search = searchEngine.healthy ? searchEngine : null;
   const mode: StatusResponse["mode"] = database && search ? "live" : database || search ? "degraded" : env.enableDemoMode ? "demo" : "unavailable";
 
   return {
@@ -96,7 +96,7 @@ export async function getStatus(): Promise<StatusResponse> {
     duplicateGroups: database?.duplicateGroups ?? 0,
     topDomains: database?.topDomains ?? [],
     sources: database?.sources ?? getFallbackSources(),
-    searchEngine: { healthy: Boolean(search), indexUid: env.meiliIndexName, ...(search ? { numberOfDocuments: search.numberOfDocuments } : {}) },
+    searchEngine,
     database: { healthy: Boolean(database) },
     generatedAt: new Date().toISOString(),
   };

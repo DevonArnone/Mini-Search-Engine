@@ -5,6 +5,9 @@ export interface SourceDefinition extends Omit<SourceInfo, "lastCrawledAt" | "do
   mark: string;
   topics: string[];
   sampleQueries: string[];
+  // Path prefixes the crawler is allowed to index, as configured in
+  // services/crawler/seeds/docs_sources.yaml.
+  scope: string[];
 }
 
 export const SOURCE_DEFINITIONS: SourceDefinition[] = [
@@ -19,6 +22,7 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     crawlCadenceHours: 168,
     topics: ["HTML", "CSS", "JavaScript", "Web APIs", "Accessibility", "HTTP"],
     sampleQueries: ["CSS grid", "fetch API", "Array methods", "Promise", "Web components"],
+    scope: ["/en-US/docs/Web", "/en-US/docs/Learn_web_development", "/en-US/docs/Glossary", "/en-US/docs/WebAssembly"],
   },
   {
     slug: "react",
@@ -31,6 +35,7 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     crawlCadenceHours: 168,
     topics: ["Hooks", "Components", "State", "Effects", "Context", "Server Components"],
     sampleQueries: ["useState", "useEffect", "Server Components", "React hooks", "context API"],
+    scope: ["/learn", "/reference", "/blog"],
   },
   {
     slug: "nextjs",
@@ -43,6 +48,7 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     crawlCadenceHours: 168,
     topics: ["App Router", "Server Actions", "Routing", "Caching", "Middleware", "Deployment"],
     sampleQueries: ["App Router", "Server Actions", "middleware", "route handlers", "caching"],
+    scope: ["/docs", "/learn", "/blog"],
   },
   {
     slug: "typescript",
@@ -55,6 +61,7 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     crawlCadenceHours: 336,
     topics: ["Types", "Interfaces", "Generics", "Utility Types", "Modules", "tsconfig"],
     sampleQueries: ["generics", "utility types", "type narrowing", "conditional types", "tsconfig strict"],
+    scope: ["/docs", "/tsconfig"],
   },
   {
     slug: "postgresql",
@@ -67,14 +74,20 @@ export const SOURCE_DEFINITIONS: SourceDefinition[] = [
     crawlCadenceHours: 720,
     topics: ["SQL", "Indexes", "Functions", "Data Types", "Query Planning", "Administration"],
     sampleQueries: ["EXPLAIN ANALYZE", "window functions", "JSONB", "indexes", "CTEs"],
+    scope: ["/docs/current"],
   },
 ];
 
 export const SOURCE_BY_SLUG = new Map(SOURCE_DEFINITIONS.map((source) => [source.slug, source]));
 
 export function getFallbackSources(): SourceInfo[] {
-  return SOURCE_DEFINITIONS.map((source) => ({
-    ...source,
+  return SOURCE_DEFINITIONS.map(({ slug, name, description, homeUrl, authorityWeight, crawlCadenceHours }) => ({
+    slug,
+    name,
+    description,
+    homeUrl,
+    authorityWeight,
+    crawlCadenceHours,
     lastCrawledAt: null,
     docCount: 0,
     crawlStatus: "pending",

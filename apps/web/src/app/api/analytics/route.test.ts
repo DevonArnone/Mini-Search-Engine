@@ -7,7 +7,9 @@ vi.mock("@/lib/db", () => ({
 }));
 
 describe("POST /api/analytics", () => {
-  beforeEach(() => query.mockReset());
+  beforeEach(() => {
+    query.mockReset();
+  });
 
   it("records a click linked to its search", async () => {
     query.mockResolvedValue({ rowCount: 1 });
@@ -29,6 +31,58 @@ describe("POST /api/analytics", () => {
       "33333333-3333-4333-8333-333333333333",
       4,
     ]);
+  });
+
+  it("waits for a search event that is still being persisted", async () => {
+    const { deferSearchEvent } = await import("@/lib/analytics");
+    const searchId = "44444444-4444-4444-8444-444444444444";
+    const order: string[] = [];
+    let releaseSearchInsert: () => void = () => {};
+    query.mockImplementation((sql: string) => {
+      if (sql.includes("'search'") && !sql.includes("result_click")) {
+        return new Promise((resolve) => {
+          releaseSearchInsert = () => {
+            order.push("search persisted");
+            resolve({ rowCount: 1 });
+          };
+        });
+      }
+      order.push("click inserted");
+      return Promise.resolve({ rowCount: 1 });
+    });
+
+    // The search response has gone out; its analytics write is in flight.
+    const persisting = deferSearchEvent({ searchId, sessionId: "11111111-1111-4111-8111-111111111111", query: "hooks", filters: {}, resultsCount: 3, latencyMs: 4 })();
+
+    const { POST } = await import("./route");
+    const click = POST(
+      new NextRequest("http://localhost:3000/api/analytics", {
+        method: "POST",
+        body: JSON.stringify({ searchId, clickedDocumentId: "33333333-3333-4333-8333-333333333333", resultRank: 1 }),
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(order).toEqual([]);
+
+    releaseSearchInsert();
+    await persisting;
+    expect((await click).status).toBe(200);
+    expect(order).toEqual(["search persisted", "click inserted"]);
+  });
+
+  it("reports a click whose search event never arrives", async () => {
+    query.mockResolvedValue({ rowCount: 0 });
+    const { POST } = await import("./route");
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/analytics", {
+        method: "POST",
+        body: JSON.stringify({ searchId: "55555555-5555-4555-8555-555555555555", clickedDocumentId: "33333333-3333-4333-8333-333333333333", resultRank: 2 }),
+      }),
+    );
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: "unknown_search" } });
+    // One attempt plus the bounded retries.
+    expect(query).toHaveBeenCalledTimes(3);
   });
 
   it("rejects malformed click events", async () => {
