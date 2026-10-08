@@ -15,3 +15,8 @@ test-results
 *.tsbuildinfo
 apps/web/.env.local
 services/crawler/.env
+data/
+packages/search-engine/dist
+.playwright-index
+apps/web/screens
+apps/web/test-results
