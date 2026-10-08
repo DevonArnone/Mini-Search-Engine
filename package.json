@@ -6,10 +6,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm --workspace apps/web run dev",
-    "build": "npm --workspace apps/web run build",
+    "dev": "npm --workspace packages/search-engine run build && npm --workspace apps/web run dev",
+    "build": "npm --workspace packages/search-engine run build && npm --workspace apps/web run build",
+    "start": "npm --workspace apps/web run start",
     "lint": "npm --workspace apps/web run lint",
-    "test": "npm --workspace apps/web run test",
+    "typecheck": "npm --workspace packages/search-engine run typecheck && npm --workspace apps/web exec tsc -- --noEmit",
+    "test": "npm --workspace packages/search-engine run test && npm --workspace apps/web run test",
     "test:e2e": "npm --workspace apps/web run test:e2e"
   }
 }

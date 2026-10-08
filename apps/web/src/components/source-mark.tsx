@@ -2,23 +2,17 @@ import React from "react";
 
 import { SOURCE_BY_SLUG } from "@/lib/sources";
 
-const SOURCE_STYLES: Record<string, string> = {
-  mdn: "border-blue-200 bg-blue-50 text-blue-700",
-  react: "border-cyan-200 bg-cyan-50 text-cyan-700",
-  nextjs: "border-slate-300 bg-slate-50 text-slate-800",
-  typescript: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  postgresql: "border-teal-200 bg-teal-50 text-teal-800",
-};
+const SIZES = {
+  sm: "h-6 min-w-6 px-1 text-[0.625rem]",
+  md: "h-8 min-w-8 px-1.5 text-2xs",
+  lg: "h-11 min-w-11 px-2 text-xs",
+} as const;
 
-export function SourceMark({ slug, size = "md" }: { slug: string; size?: "sm" | "md" | "lg" }) {
+// A swatch of the source's bookcloth stamped with its short mark.
+export function SourceMark({ slug, size = "md" }: { slug: string; size?: keyof typeof SIZES }) {
   const source = SOURCE_BY_SLUG.get(slug);
-  const dimensions = size === "sm" ? "h-7 w-7 text-[10px]" : size === "lg" ? "h-11 w-11 text-xs" : "h-9 w-9 text-[11px]";
-
   return (
-    <span
-      aria-hidden
-      className={`inline-grid shrink-0 place-items-center rounded-md border font-bold ${dimensions} ${SOURCE_STYLES[slug] ?? "border-line bg-slate-50 text-muted"}`}
-    >
+    <span aria-hidden className={`cloth-mark ${SIZES[size]}`} data-source={slug}>
       {source?.mark ?? slug.slice(0, 2).toUpperCase()}
     </span>
   );

@@ -1,0 +1,393 @@
+{
+  "recordedAt": "2026-10-08T16:54:47.190Z",
+  "indexDir": "data/bench/10001",
+  "hardware": {
+    "cpu": "Apple M1 Pro",
+    "logicalCores": 10,
+    "memoryGb": 16
+  },
+  "node": "v25.2.1",
+  "documents": 10001,
+  "terms": 64162,
+  "profiledHydration": {
+    "note": "Single cold hydration under the V8 sampling profiler; profiling adds overhead, so use the unprofiled runs below for absolute times.",
+    "hydrateMs": 1713.2,
+    "readMs": 211.6,
+    "applyMs": 1439.6,
+    "readShare": 12.8,
+    "topSelfTime": [
+      {
+        "function": "upsert — inverted-index.js",
+        "selfMs": 809.3,
+        "percent": 46.5
+      },
+      {
+        "function": "add — inverted-index.js",
+        "selfMs": 135,
+        "percent": 7.8
+      },
+      {
+        "function": "scan — tokenizer.js",
+        "selfMs": 106.4,
+        "percent": 6.1
+      },
+      {
+        "function": "isAsciiWord — tokenizer.js",
+        "selfMs": 104.7,
+        "percent": 6
+      },
+      {
+        "function": "parseBatch — store.js",
+        "selfMs": 101.2,
+        "percent": 5.8
+      },
+      {
+        "function": "(garbage collector)",
+        "selfMs": 94.7,
+        "percent": 5.4
+      },
+      {
+        "function": "tokenize — tokenizer.js",
+        "selfMs": 81.3,
+        "percent": 4.7
+      },
+      {
+        "function": "slice — node:buffer",
+        "selfMs": 55.9,
+        "percent": 3.2
+      },
+      {
+        "function": "utf8Write — buffer",
+        "selfMs": 41.5,
+        "percent": 2.4
+      },
+      {
+        "function": "read",
+        "selfMs": 30.4,
+        "percent": 1.7
+      },
+      {
+        "function": "fold — tokenizer.js",
+        "selfMs": 22.1,
+        "percent": 1.3
+      },
+      {
+        "function": "update — hash",
+        "selfMs": 19.8,
+        "percent": 1.1
+      }
+    ],
+    "batches": [
+      {
+        "seq": 1,
+        "operations": 250,
+        "readMs": 6.18,
+        "applyMs": 37.29
+      },
+      {
+        "seq": 2,
+        "operations": 250,
+        "readMs": 5.04,
+        "applyMs": 34.21
+      },
+      {
+        "seq": 3,
+        "operations": 250,
+        "readMs": 5.88,
+        "applyMs": 44.12
+      },
+      {
+        "seq": 4,
+        "operations": 250,
+        "readMs": 5.03,
+        "applyMs": 31.01
+      },
+      {
+        "seq": 5,
+        "operations": 250,
+        "readMs": 5.26,
+        "applyMs": 41.31
+      },
+      {
+        "seq": 6,
+        "operations": 250,
+        "readMs": 4.81,
+        "applyMs": 27.61
+      },
+      {
+        "seq": 7,
+        "operations": 250,
+        "readMs": 5.25,
+        "applyMs": 31.24
+      },
+      {
+        "seq": 8,
+        "operations": 250,
+        "readMs": 5.04,
+        "applyMs": 37.63
+      },
+      {
+        "seq": 9,
+        "operations": 250,
+        "readMs": 5.64,
+        "applyMs": 42.5
+      },
+      {
+        "seq": 10,
+        "operations": 250,
+        "readMs": 5.73,
+        "applyMs": 40.31
+      },
+      {
+        "seq": 11,
+        "operations": 250,
+        "readMs": 4.8,
+        "applyMs": 30.28
+      },
+      {
+        "seq": 12,
+        "operations": 250,
+        "readMs": 4.72,
+        "applyMs": 35.96
+      },
+      {
+        "seq": 13,
+        "operations": 250,
+        "readMs": 4.73,
+        "applyMs": 40.62
+      },
+      {
+        "seq": 14,
+        "operations": 250,
+        "readMs": 4.82,
+        "applyMs": 30.37
+      },
+      {
+        "seq": 15,
+        "operations": 250,
+        "readMs": 5.62,
+        "applyMs": 39.76
+      },
+      {
+        "seq": 16,
+        "operations": 250,
+        "readMs": 4.89,
+        "applyMs": 30.91
+      },
+      {
+        "seq": 17,
+        "operations": 250,
+        "readMs": 5,
+        "applyMs": 39.21
+      },
+      {
+        "seq": 18,
+        "operations": 250,
+        "readMs": 5.29,
+        "applyMs": 32.9
+      },
+      {
+        "seq": 19,
+        "operations": 250,
+        "readMs": 5.13,
+        "applyMs": 31.71
+      },
+      {
+        "seq": 20,
+        "operations": 250,
+        "readMs": 5.88,
+        "applyMs": 43.74
+      },
+      {
+        "seq": 21,
+        "operations": 250,
+        "readMs": 4.88,
+        "applyMs": 31.16
+      },
+      {
+        "seq": 22,
+        "operations": 250,
+        "readMs": 5.17,
+        "applyMs": 32.69
+      },
+      {
+        "seq": 23,
+        "operations": 250,
+        "readMs": 5.1,
+        "applyMs": 31.57
+      },
+      {
+        "seq": 24,
+        "operations": 250,
+        "readMs": 4.58,
+        "applyMs": 27.77
+      },
+      {
+        "seq": 25,
+        "operations": 250,
+        "readMs": 4.67,
+        "applyMs": 30.28
+      },
+      {
+        "seq": 26,
+        "operations": 250,
+        "readMs": 4.73,
+        "applyMs": 31.58
+      },
+      {
+        "seq": 27,
+        "operations": 250,
+        "readMs": 5.04,
+        "applyMs": 33.27
+      },
+      {
+        "seq": 28,
+        "operations": 250,
+        "readMs": 5.11,
+        "applyMs": 41.09
+      },
+      {
+        "seq": 29,
+        "operations": 250,
+        "readMs": 4.98,
+        "applyMs": 33.14
+      },
+      {
+        "seq": 30,
+        "operations": 250,
+        "readMs": 5.09,
+        "applyMs": 53.93
+      },
+      {
+        "seq": 31,
+        "operations": 250,
+        "readMs": 9.73,
+        "applyMs": 57.14
+      },
+      {
+        "seq": 32,
+        "operations": 250,
+        "readMs": 5.1,
+        "applyMs": 34.43
+      },
+      {
+        "seq": 33,
+        "operations": 250,
+        "readMs": 5.12,
+        "applyMs": 38.49
+      },
+      {
+        "seq": 34,
+        "operations": 250,
+        "readMs": 4.61,
+        "applyMs": 30.78
+      },
+      {
+        "seq": 35,
+        "operations": 250,
+        "readMs": 5.44,
+        "applyMs": 38.49
+      },
+      {
+        "seq": 36,
+        "operations": 250,
+        "readMs": 5.08,
+        "applyMs": 32.91
+      },
+      {
+        "seq": 37,
+        "operations": 250,
+        "readMs": 7.72,
+        "applyMs": 32.02
+      },
+      {
+        "seq": 38,
+        "operations": 250,
+        "readMs": 4.93,
+        "applyMs": 38.36
+      },
+      {
+        "seq": 39,
+        "operations": 250,
+        "readMs": 4.78,
+        "applyMs": 34.6
+      },
+      {
+        "seq": 40,
+        "operations": 250,
+        "readMs": 4.61,
+        "applyMs": 33.14
+      },
+      {
+        "seq": 41,
+        "operations": 1,
+        "readMs": 0.35,
+        "applyMs": 0.12
+      }
+    ]
+  },
+  "cold": {
+    "runs": [
+      {
+        "hydrateMs": 1516.6,
+        "hydrateAndFirstQueryMs": 1520.6
+      },
+      {
+        "hydrateMs": 1388.7,
+        "hydrateAndFirstQueryMs": 1391.1
+      },
+      {
+        "hydrateMs": 1368.6,
+        "hydrateAndFirstQueryMs": 1370.9
+      },
+      {
+        "hydrateMs": 1355.6,
+        "hydrateAndFirstQueryMs": 1357.2
+      },
+      {
+        "hydrateMs": 1357.5,
+        "hydrateAndFirstQueryMs": 1359
+      }
+    ],
+    "meanHydrateAndFirstQueryMs": 1399.8
+  },
+  "persistent": {
+    "queries": 2000,
+    "meanQueryMs": 1.453,
+    "p95QueryMs": 3.109
+  },
+  "incremental": {
+    "runs": [
+      {
+        "operations": 250,
+        "applyMs": 49.1,
+        "rebuiltInMemory": false
+      },
+      {
+        "operations": 250,
+        "applyMs": 53.3,
+        "rebuiltInMemory": false
+      },
+      {
+        "operations": 250,
+        "applyMs": 60.7,
+        "rebuiltInMemory": false
+      },
+      {
+        "operations": 250,
+        "applyMs": 53.8,
+        "rebuiltInMemory": false
+      },
+      {
+        "operations": 250,
+        "applyMs": 59.6,
+        "rebuiltInMemory": false
+      }
+    ],
+    "meanBatchMs": 55.3
+  },
+  "comparison": {
+    "coldVsPersistentQuery": 963,
+    "fullHydrationVsOneBatch": 25.3
+  }
+}

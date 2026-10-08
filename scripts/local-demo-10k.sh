@@ -1,35 +1,27 @@
 #!/usr/bin/env bash
+# Runs the web application against the SYNTHETIC 10K fixture.
+#
+# The fixture is generated test data for exercising the engine at a fixed
+# size. It is kept in its own index directory, separate from the crawled
+# corpus, and is not evidence of crawl scale.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-docker compose up --build -d postgres meilisearch web
-
-until docker compose exec -T postgres pg_isready -U mini_search -d mini_search >/dev/null 2>&1; do
-  sleep 1
-done
-
-until curl -fsS http://localhost:7700/health >/dev/null 2>&1; do
-  sleep 1
-done
+FIXTURE_DIR="$PWD/data/search-index-synthetic"
 
 source .venv/bin/activate
-python services/crawler/scripts/init_db.py
-python services/crawler/scripts/init_index.py
-python services/crawler/scripts/generate_demo_corpus.py --count 10000
+python services/crawler/scripts/generate_demo_corpus.py --count 10000 --out "$FIXTURE_DIR"
 
-cat <<'EOF'
+npm run build
 
-10k local demo is ready.
-Open http://localhost:3000/search
+cat <<EOF_MESSAGE
 
-Verification:
-  curl "http://localhost:3000/api/status"
-  bash scripts/benchmark-search.sh
+Synthetic 10K fixture is ready in $FIXTURE_DIR
+Starting the web server against it on http://localhost:3000 (Ctrl+C to stop).
 
-Cleanup:
+Remove the fixture afterwards:
   python services/crawler/scripts/clear_demo_corpus.py
+EOF_MESSAGE
 
-Remove every local service and volume:
-  docker compose down -v
-EOF
+SEARCH_BACKEND=native SEARCH_INDEX_DIR="$FIXTURE_DIR" npm run start

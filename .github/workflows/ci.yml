@@ -31,20 +31,16 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        run: npx tsc --noEmit
-        working-directory: apps/web
+        run: npm run typecheck
 
       - name: Lint
         run: npm run lint
-        working-directory: apps/web
 
-      - name: Unit tests
+      - name: Unit tests (search engine + web)
         run: npm test
-        working-directory: apps/web
 
-      - name: Production build
+      - name: Production build (search engine worker + Next.js)
         run: npm run build
-        working-directory: apps/web
 
   web-e2e:
     name: Web (browser + accessibility)
@@ -61,6 +57,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build search engine worker
+        run: npm --workspace packages/search-engine run build
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -113,6 +112,16 @@ jobs:
         run: pip install -r services/crawler/requirements.txt
         working-directory: .
 
+      # Lets the crawler tests check that the Node engine reads what Python publishes.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Build search engine
+        run: npm ci && npm --workspace packages/search-engine run build
+
       - name: Lint (ruff)
         run: |
           pip install ruff
@@ -146,19 +155,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      meilisearch:
-        image: getmeili/meilisearch:v1.11
-        env:
-          MEILI_MASTER_KEY: mini_search_master_key
-          MEILI_NO_ANALYTICS: "true"
-        ports:
-          - 7700:7700
-
     env:
       DATABASE_URL: postgresql://mini_search:mini_search@localhost:5432/mini_search
-      MEILI_HOST: http://localhost:7700
-      MEILI_MASTER_KEY: mini_search_master_key
       SEED_CONFIG_PATH: services/crawler/seeds/docs_sources.yaml
+      SEARCH_INDEX_DIR: ${{ github.workspace }}/data/search-index
       CRAWLER_IGNORE_ROBOTS: "true"
       CRAWLER_MAX_DEPTH: "0"
       CRAWLER_CONCURRENCY: "2"
@@ -178,11 +178,8 @@ jobs:
       - name: Init DB
         run: python services/crawler/scripts/init_db.py
 
-      - name: Init Meilisearch index
-        run: python services/crawler/scripts/init_index.py
-
       - name: Load seeds (docs_sources.yaml)
-        run: python services/crawler/scripts/load_seeds.py
+        run: python services/crawler/scripts/load_seeds.py --no-sitemaps
 
       - name: Verify seeds were enqueued
         run: |
@@ -224,8 +221,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://mini_search:mini_search@localhost:5432/mini_search
-      MEILI_HOST: http://localhost:7700
-      MEILI_MASTER_KEY: mini_search_master_key
+      SEARCH_INDEX_DIR: ${{ github.workspace }}/data/search-index
       NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
 
     services:
@@ -242,14 +238,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
-      meilisearch:
-        image: getmeili/meilisearch:v1.11
-        env:
-          MEILI_MASTER_KEY: mini_search_master_key
-          MEILI_NO_ANALYTICS: "true"
-        ports:
-          - 7700:7700
 
     steps:
       - uses: actions/checkout@v4
@@ -272,23 +260,18 @@ jobs:
       - name: Install web deps
         run: npm ci
 
-      - name: Init DB and index
+      - name: Init DB and publish an (empty) native index
         run: |
           python services/crawler/scripts/init_db.py
-          python services/crawler/scripts/init_index.py
+          python services/crawler/scripts/rebuild_index.py
 
       - name: Start Next.js server
         run: |
           npm run build
           npm start &
           sleep 5
-        working-directory: apps/web
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          MEILI_HOST: ${{ env.MEILI_HOST }}
-          MEILI_MASTER_KEY: ${{ env.MEILI_MASTER_KEY }}
 
-      - name: Run relevance evaluation (demo mode — threshold relaxed)
+      - name: Run relevance evaluation (empty index — threshold relaxed)
         run: python scripts/eval_relevance.py --base-url http://localhost:3000 --threshold 0.0
         # Full relevance eval requires a crawled index. In CI we validate that
         # the harness runs without errors. Threshold is enforced in production

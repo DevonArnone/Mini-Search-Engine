@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
 from urllib.parse import urlparse
 
 from app.db.connection import db_cursor
@@ -43,20 +43,53 @@ def compute_boost_score(
     return score
 
 
-def upsert_document(
+@dataclass(slots=True)
+class StoreResult:
+    document_id: str
+    # "stored": ready to publish. "duplicate": same text as another document.
+    outcome: str
+    # True when the document was in the index before and must now be removed.
+    needs_tombstone: bool = False
+
+
+def store_document(
     url: str,
     parsed: ParsedDocument,
     depth: int,
     source_slug: str | None = None,
     source_name: str | None = None,
     authority_score: float = 0,
-) -> dict[str, Any]:
+) -> StoreResult:
+    """Persist a parsed page under its canonical URL.
+
+    The row is written as `stored`; it becomes `indexed` only after the batch
+    containing it has been durably published. A page whose extracted text is
+    identical to an existing document is kept as `duplicate` and not indexed.
+    """
     domain = urlparse(url).netloc.lower()
     path = urlparse(url).path or "/"
     boost_score = compute_boost_score(parsed, depth, authority_score)
     freshness = _freshness_status(datetime.now(tz=timezone.utc))  # just crawled → fresh
 
     with db_cursor() as cur:
+        # Serialize writers of the same text so two workers cannot both
+        # conclude they hold the original.
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (parsed.content_hash,))
+        cur.execute(
+            """
+            SELECT id FROM documents
+            WHERE content_hash = %s AND url <> %s AND source_slug IS NOT NULL
+              AND status IN ('stored', 'indexed', 'index_failed')
+            ORDER BY created_at, id
+            LIMIT 1
+            """,
+            (parsed.content_hash, url),
+        )
+        original = cur.fetchone()
+        cur.execute("SELECT status FROM documents WHERE url = %s", (url,))
+        previous = cur.fetchone()
+        status = "duplicate" if original else "stored"
+
         cur.execute(
             """
             INSERT INTO documents (
@@ -65,9 +98,9 @@ def upsert_document(
                 content_type, section_path,
                 title, meta_description, language,
                 published_at, last_updated_at,
-                content_hash, word_count, code_block_count,
+                content_hash, word_count, code_block_count, tags,
                 boost_score, authority_score, freshness_status,
-                status, last_crawled_at, updated_at
+                status, duplicate_of, last_crawled_at, updated_at
             )
             VALUES (
                 %s, %s, %s, %s,
@@ -75,9 +108,9 @@ def upsert_document(
                 %s, %s,
                 %s, %s, %s,
                 %s, %s,
+                %s, %s, %s, %s::jsonb,
                 %s, %s, %s,
-                %s, %s, %s,
-                'stored', NOW(), NOW()
+                %s, %s, NOW(), NOW()
             )
             ON CONFLICT (url) DO UPDATE SET
                 canonical_url      = EXCLUDED.canonical_url,
@@ -95,13 +128,15 @@ def upsert_document(
                 content_hash       = EXCLUDED.content_hash,
                 word_count         = EXCLUDED.word_count,
                 code_block_count   = EXCLUDED.code_block_count,
+                tags               = EXCLUDED.tags,
                 boost_score        = EXCLUDED.boost_score,
                 authority_score    = EXCLUDED.authority_score,
                 freshness_status   = EXCLUDED.freshness_status,
-                status             = 'stored',
+                status             = EXCLUDED.status,
+                duplicate_of       = EXCLUDED.duplicate_of,
                 last_crawled_at    = NOW(),
                 updated_at         = NOW()
-            RETURNING id, url
+            RETURNING id
             """,
             (
                 url,
@@ -120,9 +155,12 @@ def upsert_document(
                 parsed.content_hash,
                 parsed.word_count,
                 parsed.code_block_count,
+                json.dumps(parsed.tags),
                 boost_score,
                 authority_score,
                 freshness,
+                status,
+                original["id"] if original else None,
             ),
         )
         record = cur.fetchone()
@@ -147,36 +185,37 @@ def upsert_document(
             ),
         )
 
-    return {
-        "id": str(record["id"]),
-        "url": url,
-        "canonical_url": parsed.canonical_url,
-        "domain": domain,
-        "source_slug": source_slug,
-        "source_name": source_name,
-        "content_type": parsed.content_type,
-        "section_path": parsed.section_path,
-        "title": parsed.title,
-        "meta_description": parsed.meta_description,
-        "headings": parsed.headings,
-        "body": parsed.body,
-        "language": parsed.language,
-        "published_at": parsed.published_at.isoformat() if parsed.published_at else None,
-        "last_updated_at": parsed.last_updated_at.isoformat() if parsed.last_updated_at else None,
-        "word_count": parsed.word_count,
-        "code_block_count": parsed.code_block_count,
-        "tags": parsed.tags,
-        "boost_score": boost_score,
-        "authority_score": authority_score,
-        "freshness_status": freshness,
-    }
+    was_indexed = bool(previous) and previous["status"] in ("indexed", "index_failed")
+    return StoreResult(
+        document_id=str(record["id"]),
+        outcome=status,
+        needs_tombstone=status == "duplicate" and was_indexed,
+    )
 
 
-def mark_document_index_status(document_id: str, status: str) -> None:
-    if status not in {"indexed", "index_failed"}:
-        raise ValueError(f"Unsupported document index status: {status}")
+def document_stored_since(url: str, since: datetime) -> bool:
+    """True when this URL was already crawled in the current run."""
     with db_cursor() as cur:
-        cur.execute("UPDATE documents SET status = %s, updated_at = NOW() WHERE id = %s", (status, document_id))
+        cur.execute(
+            "SELECT 1 FROM documents WHERE url = %s AND last_crawled_at >= %s",
+            (url, since.astimezone(timezone.utc).replace(tzinfo=None)),
+        )
+        return cur.fetchone() is not None
+
+
+def mark_document_gone(url: str) -> str | None:
+    """Flag a document whose page no longer exists. Returns its id if it was indexed."""
+    with db_cursor() as cur:
+        cur.execute(
+            """
+            UPDATE documents SET status = 'gone', updated_at = NOW()
+            WHERE url = %s AND status IN ('stored', 'indexed', 'index_failed')
+            RETURNING id
+            """,
+            (url,),
+        )
+        row = cur.fetchone()
+    return str(row["id"]) if row else None
 
 
 def log_crawl_attempt(

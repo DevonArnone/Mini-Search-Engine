@@ -1,16 +1,26 @@
+"""Remove synthetic fixture data.
+
+Deletes the synthetic index directory and any synthetic rows that older
+versions of the fixture generator wrote into PostgreSQL. Crawled documents
+are never touched: only rows with no source on a synthetic domain match.
+"""
+
 from __future__ import annotations
 
 import json
-import sys
+import shutil
+
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.core.settings import settings
 from app.db.connection import get_connection
-from app.indexer.meili import delete_documents_by_filter
 
+SYNTHETIC_INDEX_DIR = Path(__file__).resolve().parents[3] / "data" / "search-index-synthetic"
 
 SYNTHETIC_DOMAINS = (
     "docs.synthetic.local",
@@ -26,7 +36,12 @@ def build_domain_filter(domains: tuple[str, ...]) -> str:
 
 
 def clear_demo_corpus() -> int:
-    delete_documents_by_filter(build_domain_filter(SYNTHETIC_DOMAINS))
+    if "meilisearch" in settings.index_targets:
+        from app.indexer.meili import delete_documents_by_filter
+
+        delete_documents_by_filter(build_domain_filter(SYNTHETIC_DOMAINS))
+
+    shutil.rmtree(SYNTHETIC_INDEX_DIR, ignore_errors=True)
 
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -44,4 +59,4 @@ def clear_demo_corpus() -> int:
 
 
 if __name__ == "__main__":
-    print(f"Removed {clear_demo_corpus()} synthetic documents.")
+    print(f"Removed the synthetic index and {clear_demo_corpus()} legacy synthetic rows.")

@@ -70,6 +70,24 @@ def resolve_runtime_crawler_config(seed_config_path: str) -> dict[str, object]:
     }
 
 
+def default_search_index_dir() -> str:
+    """<repository root>/data/search-index, matching the web application's default."""
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "services" / "crawler").is_dir() and (parent / "package.json").exists():
+            return str(parent / "data" / "search-index")
+    return str(Path.cwd() / "data" / "search-index")
+
+
+def resolve_index_targets() -> tuple[str, ...]:
+    raw = env_value("INDEX_TARGETS") or "native"
+    targets = tuple(dict.fromkeys(item.strip().lower() for item in raw.split(",") if item.strip()))
+    unknown = [target for target in targets if target not in {"native", "meilisearch"}]
+    if unknown or not targets:
+        raise ValueError(f"INDEX_TARGETS must list native and/or meilisearch, received: {raw}")
+    return targets
+
+
 SEED_CONFIG_PATH = os.getenv("SEED_CONFIG_PATH", "services/crawler/seeds/docs_sources.yaml")
 RUNTIME_CRAWLER_CONFIG = resolve_runtime_crawler_config(SEED_CONFIG_PATH)
 
@@ -98,6 +116,13 @@ class Settings:
     seed_config_path: str = SEED_CONFIG_PATH
     meili_index_name: str = "documents"
     meili_task_timeout_ms: int = int(os.getenv("MEILI_TASK_TIMEOUT_MS", "30000"))
+    # Native index publication
+    search_index_dir: str = env_value("SEARCH_INDEX_DIR") or default_search_index_dir()
+    index_targets: tuple[str, ...] = resolve_index_targets()
+    index_batch_size: int = max(1, min(250, int(env_value("INDEX_BATCH_SIZE") or "250")))
+    index_flush_seconds: float = max(0.1, float(env_value("INDEX_FLUSH_SECONDS") or "10"))
+    # Pages with fewer extracted words than this are fetched but not indexed.
+    crawler_min_words: int = max(0, int(env_value("CRAWLER_MIN_WORDS") or "20"))
 
 
 settings = Settings()

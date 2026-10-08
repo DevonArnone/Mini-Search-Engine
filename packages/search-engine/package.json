@@ -1,0 +1,24 @@
+{
+  "name": "@mini-search/search-engine",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Inverted index and field-weighted BM25 retrieval engine for DevDocs Search.",
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./dist/index.js" },
+    "./worker": "./dist/worker.js",
+    "./cli": "./dist/cli.js"
+  },
+  "bin": { "search-index": "./dist/cli.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}

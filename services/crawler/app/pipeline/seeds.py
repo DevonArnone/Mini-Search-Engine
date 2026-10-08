@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -42,6 +43,19 @@ def validate_seed_config(config: dict) -> None:
             raise ValueError(f"Source {slug} authority_weight must be between 0 and 10")
         if int(source.get("max_depth", config.get("defaults", {}).get("max_depth", 2))) < 0:
             raise ValueError(f"Source {slug} max_depth cannot be negative")
+
+        for key in ("include_path_prefixes", "deprioritized_path_prefixes"):
+            for prefix in source.get(key, []):
+                if not isinstance(prefix, str) or not prefix.startswith("/"):
+                    raise ValueError(f"Source {slug} {key} entries must be absolute paths: {prefix}")
+        for pattern in source.get("exclude_path_patterns", []):
+            try:
+                re.compile(pattern)
+            except re.error as exc:
+                raise ValueError(f"Source {slug} has an invalid exclude pattern: {pattern}") from exc
+        for sitemap in source.get("sitemaps", []):
+            if (urlparse(str(sitemap)).hostname or "").lower() not in allowed_domains:
+                raise ValueError(f"Source {slug} sitemap is outside allowed_domains: {sitemap}")
 
         for seed in source.get("seeds", []):
             url = str(seed.get("url", "")).strip() if isinstance(seed, dict) else ""

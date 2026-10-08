@@ -4,6 +4,12 @@ import { ServiceUnavailableError } from "@/lib/api";
 
 const runSearch = vi.fn();
 const query = vi.fn();
+const afterTasks: Array<() => Promise<void>> = [];
+
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (task: () => Promise<void>) => afterTasks.push(task),
+}));
 
 vi.mock("@/lib/search", () => ({
   runSearch,
@@ -19,6 +25,7 @@ describe("GET /api/search", () => {
   beforeEach(() => {
     runSearch.mockReset();
     query.mockReset();
+    afterTasks.length = 0;
   });
 
   it("passes all filter params to the search layer", async () => {
@@ -62,12 +69,19 @@ describe("GET /api/search", () => {
       to: "2025-12-31",
       updatedWithin: "30d",
     });
-    expect(await response.json()).toMatchObject({
+    const body = await response.json();
+    expect(body).toMatchObject({
       query: "search",
       mode: "live",
       totalHits: 42,
     });
+
+    // The analytics write is scheduled for after the response, not awaited.
+    expect(query).not.toHaveBeenCalled();
+    expect(afterTasks).toHaveLength(1);
+    await afterTasks[0]();
     expect(query).toHaveBeenCalledTimes(1);
+    expect(query.mock.calls[0][1][0]).toBe(body.searchId);
   });
 
   it("defaults source and contentType to empty arrays when not provided", async () => {
@@ -93,7 +107,18 @@ describe("GET /api/search", () => {
         updatedWithin: undefined,
       }),
     );
+    expect(afterTasks).toHaveLength(0);
     expect(query).not.toHaveBeenCalled();
+  });
+
+  it("still returns a search id when the analytics write later fails", async () => {
+    runSearch.mockResolvedValue({ query: "hooks", page: 1, limit: 10, totalHits: 3, processingTimeMs: 1, mode: "live", results: [] });
+    query.mockRejectedValue(new Error("database down"));
+    const { GET } = await import("./route");
+    const response = await GET(new NextRequest("http://localhost:3000/api/search?q=hooks"));
+    expect(response.status).toBe(200);
+    expect((await response.json()).searchId).toMatch(/^[0-9a-f-]{36}$/);
+    await expect(afterTasks[0]()).resolves.toBeUndefined();
   });
 
   it("returns structured validation errors", async () => {

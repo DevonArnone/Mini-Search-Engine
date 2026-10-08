@@ -16,7 +16,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@mini-search/shared-types": ["../../packages/shared-types/src/index.ts"]
+      "@mini-search/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@mini-search/search-engine": ["../../packages/search-engine/src/index.ts"]
     },
     "plugins": [{ "name": "next" }]
   },

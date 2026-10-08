@@ -6,6 +6,10 @@ export type FreshnessStatus = "fresh" | "ok" | "stale" | "failing" | "unknown";
 
 export type CrawlStatus = "pending" | "crawling" | "healthy" | "failing";
 
+// Which retrieval engine answered. "native" is the in-process inverted index;
+// "meilisearch" is kept selectable for comparison; "demo" is bundled sample data.
+export type SearchBackend = "native" | "meilisearch" | "demo";
+
 // ---------------------------------------------------------------------------
 // Search result
 // ---------------------------------------------------------------------------
@@ -31,6 +35,8 @@ export interface SearchResult {
   freshnessStatus: FreshnessStatus;
   // Explainability
   whyMatched: string[];  // e.g. ["title", "headings", "body"]
+  // BM25 relevance score, for inspection. Only the native backend reports it.
+  score?: number;
 }
 
 export interface SearchResponse {
@@ -41,6 +47,10 @@ export interface SearchResponse {
   totalHits: number;
   processingTimeMs: number;
   mode: "live" | "demo";
+  backend: SearchBackend;
+  // Identifies the exact index state that produced these results; null when
+  // the backend does not version its index.
+  indexRevision: string | null;
   warning?: string;
   results: SearchResult[];
   // Recovery suggestions when results are sparse
@@ -97,20 +107,41 @@ export interface InsightQuery {
   avgLatencyMs: number;
 }
 
+export type InsightsPeriodDays = 7 | 30 | 90;
+
+// One UTC calendar day. A day with no searches has zero counts and null
+// latencies; it is still present, so charts show the gap.
+export interface InsightsDay {
+  date: string; // YYYY-MM-DD (UTC)
+  searches: number;
+  zeroResultSearches: number;
+  clickedSearches: number;
+  p50LatencyMs: number | null;
+  p95LatencyMs: number | null;
+}
+
 export interface InsightsResponse {
   mode: "live" | "unavailable";
+  // Reporting window: the last `periodDays` UTC calendar days, today included.
+  periodDays: InsightsPeriodDays;
+  timezone: "UTC";
+  from: string; // YYYY-MM-DD, inclusive
+  to: string; // YYYY-MM-DD, inclusive
+  period: string;
   totalSearches: number;
   uniqueQueries: number;
   zeroResultQueries: InsightQuery[];
   topQueries: InsightQuery[];
   lowClickQueries: InsightQuery[];
+  // Result clicks by source, attributed to the day of the search they followed.
   topSources: FilterOption[];
   avgLatencyMs: number;
+  // Percentiles over every search event in the window, not an average of daily values.
   p50LatencyMs: number;
   p95LatencyMs: number;
   zeroResultRate: number;
   clickThroughRate: number;
-  period: string;
+  daily: InsightsDay[];
 }
 
 // ---------------------------------------------------------------------------
@@ -134,8 +165,22 @@ export interface StatusResponse {
   sources: SourceInfo[];
   searchEngine: {
     healthy: boolean;
+    backend: SearchBackend;
     indexUid: string;
+    indexRevision: string | null;
+    // Native backend only: "ready", "hydrating", "missing", ...
+    state?: string;
     numberOfDocuments?: number;
+    // Native backend only: how the in-memory index was built and what it costs.
+    diagnostics?: {
+      hydrationMs: number | null;
+      terms: number;
+      pendingBatches: number;
+      lastError: string | null;
+      rssBytes: number;
+      heapUsedBytes: number;
+      externalBytes: number;
+    };
   };
   database: {
     healthy: boolean;

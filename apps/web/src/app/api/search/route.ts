@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 
 import { apiError, ServiceUnavailableError, validationError } from "@/lib/api";
 import { searchSchema } from "@/lib/api-schemas";
-import { withDb } from "@/lib/db";
+import { deferSearchEvent } from "@/lib/analytics";
 import { runSearch } from "@/lib/search";
 
 const SESSION_COOKIE = "devdocs_session";
@@ -40,35 +40,27 @@ export async function GET(request: NextRequest) {
 
     if (payload.q && results.mode === "live") {
       searchId = randomUUID();
-      try {
-        await withDb((client) =>
-          client.query(
-            `INSERT INTO search_analytics
-               (search_id, event_type, session_id, query, filters, results_count, latency_ms)
-             VALUES ($1, 'search', $2, $3, $4::jsonb, $5, $6)`,
-            [
-              searchId,
-              sessionId,
-              payload.q.toLowerCase(),
-              JSON.stringify({
-                source: payload.source,
-                contentType: payload.contentType,
-                domain: payload.domain,
-                language: payload.language,
-                tags: payload.tags,
-                sort: payload.sort,
-                from: payload.from ?? null,
-                to: payload.to ?? null,
-                updatedWithin: payload.updatedWithin ?? null,
-              }),
-              results.totalHits,
-              latency,
-            ],
-          ),
-        );
-      } catch {
-        searchId = undefined;
-      }
+      // Persisted after the response is sent; the click endpoint waits on it.
+      after(
+        deferSearchEvent({
+          searchId,
+          sessionId,
+          query: payload.q.toLowerCase(),
+          filters: {
+            source: payload.source,
+            contentType: payload.contentType,
+            domain: payload.domain,
+            language: payload.language,
+            tags: payload.tags,
+            sort: payload.sort,
+            from: payload.from ?? null,
+            to: payload.to ?? null,
+            updatedWithin: payload.updatedWithin ?? null,
+          },
+          resultsCount: results.totalHits,
+          latencyMs: latency,
+        }),
+      );
     }
 
     const response = NextResponse.json({ ...results, ...(searchId ? { searchId } : {}) });
