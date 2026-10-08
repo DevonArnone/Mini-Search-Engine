@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight, ArrowUpRight, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
-import { SourceMark } from "@/components/source-mark";
+import { crawlCadence, crawlStatusLabel, formatCount, formatDay } from "@/lib/format";
 import { SOURCE_BY_SLUG } from "@/lib/sources";
 import { getSources } from "@/lib/sources-service";
 
@@ -10,59 +10,96 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Sources",
-  description: "Browse the official documentation sources indexed by DevDocs Search.",
+  description: "The official documentation sources indexed by DevDocs Search, with coverage and crawl health.",
 };
-
-function cadence(hours: number) {
-  if (hours >= 720) return `${Math.round(hours / 720)} month${hours >= 1440 ? "s" : ""}`;
-  if (hours >= 168) return `${Math.round(hours / 168)} week${hours >= 336 ? "s" : ""}`;
-  if (hours >= 24) return `${Math.round(hours / 24)} day${hours >= 48 ? "s" : ""}`;
-  return `${hours} hours`;
-}
-
-function statusLabel(status: string) {
-  if (status === "healthy") return { label: "Healthy", dot: "bg-emerald-500" };
-  if (status === "crawling") return { label: "Crawling", dot: "bg-blue-500" };
-  if (status === "failing") return { label: "Failing", dot: "bg-rose-500" };
-  return { label: "Pending", dot: "bg-slate-300" };
-}
 
 export default async function SourcesPage() {
   const response = await getSources();
-  const totalDocuments = response.sources.reduce((total, source) => total + source.docCount, 0);
+  const live = response.mode === "live";
+  const sources = response.sources.filter((source) => SOURCE_BY_SLUG.has(source.slug));
+  const total = sources.reduce((sum, source) => sum + source.docCount, 0);
+  const largest = Math.max(1, ...sources.map((source) => source.docCount));
+  const showCoverage = live && total > 0;
 
   return (
-    <main className="section-shell min-h-[calc(100vh-var(--header-height))] py-8 sm:py-12" id="main-content">
+    <main className="page min-h-[calc(100vh-var(--header-height))] pt-10 sm:pt-14" id="main-content">
       <header className="max-w-3xl">
-        <p className="eyebrow">Coverage registry</p>
-        <h1 className="page-heading mt-2">Official documentation sources</h1>
-        <p className="mt-2 text-sm leading-6 text-muted">{totalDocuments ? `${totalDocuments.toLocaleString()} indexed documents across ${response.sources.length} maintained sources.` : `${response.sources.length} configured sources awaiting a connected crawl and index.`}</p>
+        <h1 className="display text-[clamp(2.25rem,5vw,3.75rem)]">The sources</h1>
+        <p className="mt-3 max-w-prose text-ink-soft">
+          Five publishers, each crawled from its own site within fixed path boundaries.
+          {showCoverage ? <> Together they account for <span className="font-mono text-ink">{formatCount(total)}</span> indexed documents.</> : null}
+        </p>
       </header>
 
-      {response.mode === "unavailable" ? <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Live source metrics are unavailable. Configuration details remain available below.</div> : null}
-
-      <div className="mt-8 overflow-hidden rounded-lg border border-line bg-white shadow-card">
-        <div className="hidden grid-cols-[minmax(0,1fr)_130px_150px_120px] border-b border-line bg-slate-50 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] text-muted md:grid">
-          <span>Source</span><span>Status</span><span>Coverage</span><span className="sr-only">Actions</span>
+      {!live ? (
+        <div className="notice mt-8 border-bad" role="alert">
+          <TriangleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-bad" />
+          <div>
+            <p className="font-semibold">Coverage and crawl health are unavailable.</p>
+            <p className="mt-0.5 text-ink-soft">The database is not connected. What each source covers is listed below from configuration.</p>
+          </div>
         </div>
-        {response.sources.map((source, index) => {
+      ) : null}
+
+      {showCoverage ? (
+        <section aria-labelledby="coverage-heading" className="mt-12">
+          <h2 className="heading" id="coverage-heading">Indexed documents by source</h2>
+          <p className="mt-1 max-w-prose text-sm text-ink-soft">Counts of pages currently in the index. They compare the sources with each other; they are not a share of everything each publisher has written.</p>
+          <ul className="mt-5 border-t border-rule-strong">
+            {[...sources].sort((a, b) => b.docCount - a.docCount).map((source) => (
+              <li className="grid grid-cols-[6.5rem_minmax(0,1fr)_4.5rem] items-center gap-3 border-b border-rule py-3 text-sm sm:grid-cols-[10rem_minmax(0,1fr)_6rem]" data-source={source.slug} key={source.slug}>
+                <span className="truncate font-medium text-ink">{SOURCE_BY_SLUG.get(source.slug)?.shortName}</span>
+                <span aria-hidden className="h-6 bg-paper-sunk"><span className="block h-full bg-cloth" style={{ width: `${(source.docCount / largest) * 100}%`, minWidth: source.docCount ? 2 : 0 }} /></span>
+                <span className="text-right font-mono text-xs text-ink">{formatCount(source.docCount)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <div className="mt-14 border-t border-rule-strong">
+        {sources.map((source) => {
           const definition = SOURCE_BY_SLUG.get(source.slug);
-          const health = statusLabel(source.crawlStatus);
+          if (!definition) return null;
+          const facts: Array<[string, React.ReactNode]> = [];
+          if (live && source.docCount > 0) facts.push(["Indexed", <><span className="font-mono">{formatCount(source.docCount)}</span> documents</>]);
+          if (live) facts.push(["Crawl", crawlStatusLabel(source.crawlStatus)]);
+          const lastCrawled = live ? formatDay(source.lastCrawledAt) : null;
+          if (lastCrawled) facts.push(["Last crawled", lastCrawled]);
+          facts.push(["Recrawled", crawlCadence(source.crawlCadenceHours)]);
+
           return (
-            <article className={`grid gap-4 p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_130px_150px_120px] md:items-center ${index ? "border-t border-line" : ""}`} key={source.slug}>
-              <div className="flex min-w-0 items-start gap-3">
-                <SourceMark slug={source.slug} />
-                <div className="min-w-0"><h2 className="font-semibold text-ink">{source.name}</h2><p className="mt-1 line-clamp-2 text-sm leading-5 text-muted">{definition?.description ?? source.description}</p></div>
+            <article className="grid gap-x-8 gap-y-5 border-b border-rule py-8 md:grid-cols-[7.5rem_minmax(0,1fr)_15rem]" data-source={source.slug} key={source.slug}>
+              {/* The volume's front board. */}
+              <Link aria-hidden className="hidden h-40 flex-col justify-between bg-cloth p-3 text-cloth-ink md:flex" href={`/sources/${source.slug}`} style={{ borderRadius: "1px 3px 3px 1px" }} tabIndex={-1}>
+                <span className="font-mono text-2xs font-semibold">{definition.mark}</span>
+                <span className="font-display text-lg font-medium leading-tight">{definition.shortName}</span>
+              </Link>
+
+              <div className="min-w-0">
+                <h2 className="font-display text-2xl font-medium text-ink sm:text-3xl">
+                  <span aria-hidden className="mr-2.5 inline-block h-5 w-2 bg-cloth align-baseline md:hidden" />
+                  {source.name}
+                </h2>
+                <p className="mt-2 max-w-prose text-ink-soft">{definition.description}</p>
+                <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft">
+                  <span>Look up</span>
+                  {definition.sampleQueries.slice(0, 4).map((query) => <Link className="link text-ink" href={`/sources/${source.slug}?q=${encodeURIComponent(query)}`} key={query}>{query}</Link>)}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Link className="button" href={`/sources/${source.slug}`}>Search {definition.shortName}<ArrowRight aria-hidden className="h-4 w-4" /></Link>
+                  <a className="button-quiet" href={source.homeUrl} rel="noopener noreferrer" target="_blank">Official site<ArrowUpRight aria-hidden className="h-4 w-4" /><span className="sr-only"> (opens in a new tab)</span></a>
+                </div>
               </div>
-              <div className="inline-flex items-center gap-2 text-sm text-muted"><span className={`status-dot ${health.dot}`} />{health.label}</div>
-              <div className="text-sm text-muted"><strong className="block font-medium text-ink">{source.docCount ? source.docCount.toLocaleString() : "No documents"}</strong><span className="text-xs">Every {cadence(source.crawlCadenceHours)}</span></div>
-              <div className="flex gap-1 md:justify-end">
-                <Link aria-label={`Browse ${source.name}`} className="icon-button" href={`/sources/${source.slug}`} title={`Browse ${source.name}`}><ArrowRight aria-hidden className="h-4 w-4" /></Link>
-                <a aria-label={`Open ${source.name} official site`} className="icon-button" href={source.homeUrl} rel="noopener noreferrer" target="_blank" title="Official site"><ExternalLink aria-hidden className="h-4 w-4" /></a>
-              </div>
-              {definition?.sampleQueries.length ? (
-                <div className="col-span-full flex flex-wrap items-center gap-1.5 border-t border-line pt-3 text-xs"><span className="mr-1 text-muted">Try</span>{definition.sampleQueries.slice(0, 4).map((query) => <Link className="rounded bg-slate-50 px-2 py-1 text-slate-600 hover:bg-teal-50 hover:text-teal-800" href={`/search?q=${encodeURIComponent(query)}&source=${source.slug}`} key={query}>{query}</Link>)}</div>
-              ) : null}
+
+              <dl className="grid content-start gap-y-2 text-sm">
+                {facts.map(([term, detail]) => (
+                  <div className="flex justify-between gap-4 border-b border-rule pb-2 last:border-b-0" key={term}>
+                    <dt className="text-ink-soft">{term}</dt>
+                    <dd className="text-right text-ink">{detail}</dd>
+                  </div>
+                ))}
+              </dl>
             </article>
           );
         })}

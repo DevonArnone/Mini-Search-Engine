@@ -1,9 +1,10 @@
 "use client";
 
-import { X } from "lucide-react";
-import React, { useEffect } from "react";
+import { Lock } from "lucide-react";
+import React from "react";
 
-import { SOURCE_DEFINITIONS } from "@/lib/sources";
+import { Sheet } from "@/components/ui/sheet";
+import { SOURCE_BY_SLUG, SOURCE_DEFINITIONS } from "@/lib/sources";
 import type { ContentType, FiltersResponse, SearchState } from "@/types/search";
 
 const CONTENT_LABELS: Record<ContentType, string> = {
@@ -14,38 +15,31 @@ const CONTENT_LABELS: Record<ContentType, string> = {
   blog: "Blog",
 };
 
+const UPDATED_LABELS = { "7d": "7 days", "30d": "30 days", "90d": "90 days" } as const;
+
 function toggle(values: string[], value: string) {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-function FilterList({
-  label,
-  options,
-  selected,
-  onToggle,
-}: {
+interface Option {
+  value: string;
   label: string;
-  options: Array<{ value: string; label: string; count: number }>;
-  selected: string[];
-  onToggle: (value: string) => void;
-}) {
+  count: number;
+  source?: string;
+}
+
+function FilterList({ label, options, selected, onToggle }: { label: string; options: Option[]; selected: string[]; onToggle: (value: string) => void }) {
   if (!options.length) return null;
   return (
-    <fieldset className="border-b border-line pb-5 last:border-0 last:pb-0">
-      <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted">{label}</legend>
-      <div className="space-y-0.5">
+    <fieldset className="border-t border-rule py-4 first:border-t-0 first:pt-0">
+      <legend className="label float-left mb-1.5 w-full">{label}</legend>
+      <div className="clear-both">
         {options.map((option) => (
-          <label className="flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded px-2 text-sm hover:bg-slate-50" key={option.value}>
-            <span className="flex min-w-0 items-center gap-2.5">
-              <input
-                checked={selected.includes(option.value)}
-                className="h-4 w-4 rounded border-line-strong accent-teal-700"
-                onChange={() => onToggle(option.value)}
-                type="checkbox"
-              />
-              <span className="truncate">{option.label}</span>
-            </span>
-            {option.count > 0 ? <span className="font-mono text-[11px] text-slate-600">{option.count.toLocaleString()}</span> : null}
+          <label className="-mx-2 flex min-h-10 cursor-pointer items-center gap-2.5 px-2 text-sm text-ink transition-colors duration-150 hover:bg-paper-sunk" data-source={option.source} key={option.value} style={{ borderRadius: 2 }}>
+            <input checked={selected.includes(option.value)} className="h-4 w-4 shrink-0 accent-[rgb(var(--ink))]" onChange={() => onToggle(option.value)} type="checkbox" />
+            {option.source ? <span aria-hidden className="h-4 w-1.5 shrink-0 bg-cloth" /> : null}
+            <span className="min-w-0 flex-1 truncate">{option.label}</span>
+            {option.count > 0 ? <span className="measure text-ink-faint">{option.count.toLocaleString("en-US")}</span> : null}
           </label>
         ))}
       </div>
@@ -56,109 +50,123 @@ function FilterList({
 function FilterContent({
   filters,
   state,
+  lockedSource,
   onChange,
   onClear,
+  hasFilters,
 }: {
   filters: FiltersResponse;
   state: SearchState;
+  lockedSource?: string;
   onChange: (patch: Partial<SearchState>) => void;
   onClear: () => void;
+  hasFilters: boolean;
 }) {
   const sourceCounts = new Map(filters.sources.map((source) => [source.value, source.count]));
-  const sourceOptions = SOURCE_DEFINITIONS.map((source) => ({
+  const sourceOptions: Option[] = SOURCE_DEFINITIONS.map((source) => ({
     value: source.slug,
     label: source.shortName,
     count: sourceCounts.get(source.slug) ?? 0,
+    source: source.slug,
   }));
+  const locked = lockedSource ? SOURCE_BY_SLUG.get(lockedSource) : undefined;
+  // Facet counts cover the whole index, so they are not shown inside a
+  // workspace, where they would overstate what the source holds.
+  const scoped = Boolean(lockedSource);
 
   return (
-    <>
-      <div className="flex h-12 items-center justify-between border-b border-line px-4">
-        <h2 className="text-sm font-semibold text-ink">Filters</h2>
-        <button className="button-ghost min-h-8 px-2 text-xs" onClick={onClear} type="button">Clear all</button>
+    <div>
+      <div className="mb-3 flex min-h-8 items-center justify-between">
+        <h2 className="font-display text-lg font-medium text-ink">Filters</h2>
+        {hasFilters ? <button className="button-bare min-h-8" onClick={onClear} type="button">Clear all</button> : null}
       </div>
-      <div className="space-y-5 p-4">
-        <FilterList
-          label="Source"
-          onToggle={(value) => onChange({ source: toggle(state.source, value), page: 1 })}
-          options={sourceOptions}
-          selected={state.source}
-        />
-        <FilterList
-          label="Content type"
-          onToggle={(value) => onChange({ contentType: toggle(state.contentType, value) as ContentType[], page: 1 })}
-          options={filters.contentTypes.map((option) => ({ ...option, label: CONTENT_LABELS[option.value as ContentType] ?? option.value }))}
-          selected={state.contentType}
-        />
-        <fieldset className="border-b border-line pb-5">
-          <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted">Updated within</legend>
-          <div className="grid grid-cols-3 gap-1.5">
-            {(["7d", "30d", "90d"] as const).map((period) => (
+
+      {locked ? (
+        <div className="border-t border-rule py-4" data-source={lockedSource}>
+          <p className="label mb-1.5">Source</p>
+          <p className="flex min-h-10 items-center gap-2.5 text-sm text-ink">
+            <span aria-hidden className="h-4 w-1.5 shrink-0 bg-cloth" />
+            <span className="flex-1">{locked.shortName}</span>
+            <Lock aria-hidden className="h-3.5 w-3.5 text-ink-faint" />
+          </p>
+          <p className="text-xs text-ink-soft">This workspace only searches {locked.name}.</p>
+        </div>
+      ) : (
+        <FilterList label="Source" onToggle={(value) => onChange({ source: toggle(state.source, value), page: 1 })} options={sourceOptions} selected={state.source} />
+      )}
+
+      <FilterList
+        label="Content type"
+        onToggle={(value) => onChange({ contentType: toggle(state.contentType, value) as ContentType[], page: 1 })}
+        options={filters.contentTypes.map((option) => ({ ...option, count: scoped ? 0 : option.count, label: CONTENT_LABELS[option.value as ContentType] ?? option.value }))}
+        selected={state.contentType}
+      />
+
+      <fieldset className="border-t border-rule py-4">
+        <legend className="label float-left mb-2 w-full">Updated within</legend>
+        <div className="clear-both grid grid-cols-3">
+          {(Object.keys(UPDATED_LABELS) as Array<keyof typeof UPDATED_LABELS>).map((period, index) => {
+            const pressed = state.updatedWithin === period;
+            return (
               <button
-                aria-pressed={state.updatedWithin === period}
-                className={`min-h-9 rounded-md border px-2 text-xs font-medium ${state.updatedWithin === period ? "border-teal-300 bg-teal-50 text-teal-800" : "border-line bg-white text-muted hover:bg-slate-50"}`}
+                aria-pressed={pressed}
+                className={`min-h-10 border border-rule-strong px-1 text-xs font-medium transition-colors duration-150 ${index ? "-ml-px" : ""} ${pressed ? "relative z-10 border-ink bg-ink text-paper" : "bg-paper-raised text-ink-soft hover:border-ink hover:text-ink"}`}
                 key={period}
-                onClick={() => onChange({ updatedWithin: state.updatedWithin === period ? null : period, page: 1 })}
+                onClick={() => onChange({ updatedWithin: pressed ? null : period, page: 1 })}
                 type="button"
               >
-                {period.replace("d", " days")}
+                {UPDATED_LABELS[period]}
               </button>
-            ))}
-          </div>
-        </fieldset>
-        <FilterList
-          label="Language"
-          onToggle={(value) => onChange({ language: toggle(state.language, value), page: 1 })}
-          options={filters.languages.slice(0, 8).map((option) => ({ ...option, label: option.value }))}
-          selected={state.language}
-        />
-      </div>
-    </>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <FilterList
+        label="Language"
+        onToggle={(value) => onChange({ language: toggle(state.language, value), page: 1 })}
+        options={filters.languages.slice(0, 8).map((option) => ({ ...option, count: scoped ? 0 : option.count, label: option.value }))}
+        selected={state.language}
+      />
+    </div>
   );
 }
 
 export function SearchFilters({
   filters,
   state,
+  lockedSource,
+  hasFilters,
   mobileOpen,
   onChange,
   onClear,
-  onClose,
+  onMobileOpenChange,
+  mobileTriggerRef,
 }: {
   filters: FiltersResponse;
   state: SearchState;
+  lockedSource?: string;
+  hasFilters: boolean;
   mobileOpen: boolean;
   onChange: (patch: Partial<SearchState>) => void;
   onClear: () => void;
-  onClose: () => void;
+  onMobileOpenChange: (open: boolean) => void;
+  mobileTriggerRef?: React.RefObject<HTMLButtonElement | null>;
 }) {
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
-  }, [mobileOpen, onClose]);
-
+  const content = <FilterContent filters={filters} hasFilters={hasFilters} lockedSource={lockedSource} onChange={onChange} onClear={onClear} state={state} />;
   return (
     <>
-      <aside className="panel hidden overflow-hidden lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:block lg:self-start" aria-label="Search filters">
-        <FilterContent filters={filters} onChange={onChange} onClear={onClear} state={state} />
+      <aside aria-label="Search filters" className="hidden lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:block lg:max-h-[calc(100vh-var(--header-height)-3rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
+        {content}
       </aside>
-      {mobileOpen ? (
-        <div className="fixed inset-0 z-[70] lg:hidden" role="presentation">
-          <button aria-label="Close filters" className="absolute inset-0 bg-ink/30" onClick={onClose} type="button" />
-          <div aria-label="Search filters" aria-modal="true" className="absolute inset-y-0 right-0 w-[min(90vw,360px)] overflow-y-auto bg-white shadow-panel" role="dialog">
-            <button aria-label="Close filters" className="icon-button absolute right-2 top-1 z-10" onClick={onClose} type="button">
-              <X aria-hidden className="h-5 w-5" />
-            </button>
-            <FilterContent filters={filters} onChange={onChange} onClear={onClear} state={state} />
-          </div>
+      <Sheet description="Narrow the results by source, content type, recency, and language." onOpenChange={onMobileOpenChange} open={mobileOpen} returnFocusRef={mobileTriggerRef} title="Search filters">
+        <div className="px-5 py-4">{content}</div>
+        <div className="sticky bottom-0 border-t border-rule bg-paper px-5 py-3">
+          <button className="button w-full" onClick={() => onMobileOpenChange(false)} type="button">Show results</button>
         </div>
-      ) : null}
+      </Sheet>
     </>
   );
 }
 
-export { CONTENT_LABELS };
+export { CONTENT_LABELS, UPDATED_LABELS };

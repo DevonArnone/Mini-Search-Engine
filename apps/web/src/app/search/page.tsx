@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { ResultsSkeleton } from "@/components/search-results";
 import { SearchShell } from "@/components/search-shell";
 
 export const metadata: Metadata = {
@@ -10,13 +11,9 @@ export const metadata: Metadata = {
 
 export default function SearchPage() {
   return (
-    <main className="page-shell min-h-[calc(100vh-var(--header-height))]" id="main-content">
-      <header className="mb-5">
-        <p className="eyebrow">Documentation workbench</p>
-        <h1 className="page-heading mt-1.5">Search official developer docs</h1>
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted">One ranked index across five authoritative sources, with filters that stay shareable in the URL.</p>
-      </header>
-      <Suspense fallback={<div className="panel p-8 text-center text-sm text-muted">Loading search workspace…</div>}>
+    <main className="page min-h-[calc(100vh-var(--header-height))] pt-6 sm:pt-8" id="main-content">
+      <h1 className="title mb-4">Search the documentation</h1>
+      <Suspense fallback={<ResultsSkeleton />}>
         <SearchShell />
       </Suspense>
     </main>

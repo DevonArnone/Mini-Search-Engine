@@ -1,31 +1,33 @@
 "use client";
 
-import { ArrowUpRight, Braces, ChevronLeft, ChevronRight, Clock3, RotateCcw, SearchX } from "lucide-react";
-import React, { Fragment } from "react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Braces, ChevronDown, RotateCcw, TriangleAlert } from "lucide-react";
+import React, { Fragment, useId, useState } from "react";
 
+import { CONTENT_LABELS } from "@/components/search-filters";
 import { SourceMark } from "@/components/source-mark";
 import { SOURCE_BY_SLUG } from "@/lib/sources";
 import type { SearchResponse, SearchResult } from "@/types/search";
-import { CONTENT_LABELS } from "@/components/search-filters";
 
 function decodeEntities(value: string) {
   return value
-    .replaceAll("&amp;", "&")
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
     .replaceAll("&quot;", '"')
     .replaceAll("&#39;", "'")
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)));
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replaceAll("&amp;", "&");
 }
 
-function HighlightedText({ text }: { text: string }) {
+// Renders engine highlights as text plus <mark>. The string is never parsed as
+// HTML: anything other than <em> is dropped and the rest becomes text nodes.
+export function HighlightedText({ text }: { text: string }) {
   const parts = text.replace(/<(?!\/?em\b)[^>]*>/gi, "").split(/(<em>.*?<\/em>)/gi);
   return (
     <>
       {parts.map((part, index) => {
         const highlighted = /^<em>.*<\/em>$/i.test(part);
         const clean = decodeEntities(part.replace(/<\/?em>/gi, ""));
-        return highlighted ? <mark key={`${clean}-${index}`}>{clean}</mark> : <Fragment key={`${clean}-${index}`}>{clean}</Fragment>;
+        return highlighted ? <mark key={index}>{clean}</mark> : <Fragment key={index}>{clean}</Fragment>;
       })}
     </>
   );
@@ -41,45 +43,94 @@ function displayUrl(value: string) {
   }
 }
 
-function freshness(result: SearchResult) {
-  if (result.lastUpdatedAt) {
-    const date = new Date(result.lastUpdatedAt);
-    if (!Number.isNaN(date.getTime())) return `Updated ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
-  }
-  if (result.freshnessStatus === "fresh") return "Updated recently";
-  if (result.freshnessStatus === "stale") return "Update may be stale";
+function formatDate(value: string | null) {
+  if (!value) return null;
+  const date = new Date(/(?:Z|[+-]\d{2}:?\d{2})$/.test(value) || !value.includes("T") ? value : `${value}Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+// What is known about how current the page is, in order of precision.
+function freshness(result: SearchResult): { label: string; stale: boolean } | null {
+  const updated = formatDate(result.lastUpdatedAt);
+  if (updated) return { label: `Updated ${updated}`, stale: result.freshnessStatus === "stale" };
+  if (result.freshnessStatus === "fresh") return { label: "Crawled within the last week", stale: false };
+  if (result.freshnessStatus === "ok") return { label: "Crawled within the last month", stale: false };
+  if (result.freshnessStatus === "stale") return { label: "Crawled over a month ago", stale: true };
   return null;
 }
 
-export function ResultCard({ result, rank, onTrackClick }: { result: SearchResult; rank: number; onTrackClick: () => void }) {
+export function ResultEntry({ result, rank, indexRevision, onTrackClick }: { result: SearchResult; rank: number; indexRevision: string | null; onTrackClick: () => void }) {
   const source = result.sourceSlug ? SOURCE_BY_SLUG.get(result.sourceSlug) : undefined;
-  const updated = freshness(result);
+  const fresh = freshness(result);
+  const [open, setOpen] = useState(false);
+  const detailsId = useId();
+  const published = formatDate(result.publishedAt);
+
+  const provenance: Array<[string, React.ReactNode]> = [];
+  provenance.push(["Address", <span className="break-all font-mono text-xs" key="url">{result.url}</span>]);
+  if (result.sectionPath) provenance.push(["Section", result.sectionPath]);
+  if (result.sourceName) provenance.push(["Publisher", result.sourceName]);
+  if (result.whyMatched.length) provenance.push(["Matched in", result.whyMatched.join(", ")]);
+  if (typeof result.score === "number") provenance.push(["Relevance score", <span className="font-mono text-xs" key="score">{result.score.toFixed(3)} (BM25)</span>]);
+  if (published) provenance.push(["Published", published]);
+  if (fresh) provenance.push(["Freshness", fresh.label]);
+  if (result.language) provenance.push(["Language", result.language]);
+  if (result.tags.length) provenance.push(["Tags", result.tags.join(", ")]);
+  if (indexRevision) provenance.push(["Index revision", <span className="font-mono text-xs" key="revision">{indexRevision}</span>]);
 
   return (
-    <article className="card card-interactive p-4 sm:p-5">
-      <div className="flex gap-3.5">
-        {result.sourceSlug ? <SourceMark size="sm" slug={result.sourceSlug} /> : null}
-        <div className="min-w-0 flex-1">
-          <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs text-muted">
-            <span className="font-medium text-ink">{source?.shortName ?? result.sourceName ?? result.domain}</span>
-            {result.contentType ? <span className="badge bg-slate-100 text-slate-600">{CONTENT_LABELS[result.contentType]}</span> : null}
-            {result.sectionPath ? <span className="hidden truncate sm:inline">{result.sectionPath}</span> : null}
-          </div>
-          <h2 className="text-base font-semibold leading-6 text-ink sm:text-lg">
-            <a className="rounded-sm hover:text-teal-800 hover:underline" href={result.url} onClick={onTrackClick} rel="noopener noreferrer" target="_blank">
-              <HighlightedText text={result.highlights[0] ?? result.title} />
-              <ArrowUpRight aria-hidden className="ml-1 inline h-3.5 w-3.5 align-baseline text-slate-400" />
-            </a>
-          </h2>
-          <p className="mt-0.5 truncate font-mono text-[11px] text-teal-700">{displayUrl(result.url)}</p>
-          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600"><HighlightedText text={result.snippet} /></p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
-            {result.codeBlockCount > 0 ? <span className="inline-flex items-center gap-1"><Braces aria-hidden className="h-3.5 w-3.5" />{result.codeBlockCount} code {result.codeBlockCount === 1 ? "example" : "examples"}</span> : null}
-            {updated ? <span className="inline-flex items-center gap-1"><Clock3 aria-hidden className="h-3.5 w-3.5" />{updated}</span> : null}
-            {result.whyMatched.length > 0 ? <span>Matched in {result.whyMatched.slice(0, 3).join(", ")}</span> : null}
-            <span className="ml-auto font-mono text-[10px] text-slate-600">#{rank}</span>
-          </div>
+    <article className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 border-t border-rule py-5 first:border-t-0 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-4" data-source={result.sourceSlug ?? undefined}>
+      {/* The only thing rank changes is the weight of this numeral. */}
+      <span aria-hidden className={`pt-1 text-right font-mono text-sm ${rank <= 3 ? "font-semibold text-ink" : "text-ink-faint"}`}>{rank}</span>
+
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-ink-soft">
+          {result.sourceSlug ? <SourceMark size="sm" slug={result.sourceSlug} /> : null}
+          <span className="font-semibold text-cloth-text">{source?.shortName ?? result.sourceName ?? result.domain}</span>
+          {result.contentType ? <span>{CONTENT_LABELS[result.contentType]}</span> : null}
+          {result.sectionPath ? <span className="hidden min-w-0 truncate text-ink-faint md:inline">{result.sectionPath}</span> : null}
         </div>
+
+        <h3 className="mt-1.5 font-display text-xl font-medium leading-snug text-ink">
+          <a className="decoration-rule-strong decoration-1 underline-offset-4 hover:underline" href={result.url} onClick={onTrackClick} rel="noopener noreferrer" target="_blank">
+            <HighlightedText text={result.highlights[0] ?? result.title} />
+            <ArrowUpRight aria-hidden className="ml-1 inline h-4 w-4 align-baseline text-ink-faint" />
+            <span className="sr-only"> (opens the official page in a new tab)</span>
+          </a>
+        </h3>
+        <p className="mt-0.5 truncate font-mono text-xs text-ink-soft">{displayUrl(result.url)}</p>
+
+        {result.snippet ? <p className="mt-2 line-clamp-3 max-w-prose text-sm leading-relaxed text-ink-soft"><HighlightedText text={result.snippet} /></p> : null}
+
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-soft">
+          {fresh ? (
+            <span className={`inline-flex items-center gap-1.5 ${fresh.stale ? "font-medium text-warn" : ""}`}>
+              {fresh.stale ? <TriangleAlert aria-hidden className="h-3.5 w-3.5" /> : null}
+              {fresh.label}
+            </span>
+          ) : null}
+          {result.codeBlockCount > 0 ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Braces aria-hidden className="h-3.5 w-3.5" />
+              {result.codeBlockCount} code {result.codeBlockCount === 1 ? "example" : "examples"}
+            </span>
+          ) : null}
+          {result.whyMatched.length > 0 ? <span>Matched in {result.whyMatched.slice(0, 3).join(", ")}</span> : null}
+          <button aria-controls={detailsId} aria-expanded={open} className="-my-2 ml-auto inline-flex min-h-9 items-center gap-1 font-medium text-ink-soft hover:text-ink" onClick={() => setOpen((current) => !current)} type="button">
+            Provenance
+            <ChevronDown aria-hidden className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+
+        <dl className={`mt-3 gap-x-6 gap-y-2 border-l border-rule-strong pl-4 text-sm sm:grid-cols-[8.5rem_minmax(0,1fr)] ${open ? "grid" : "hidden"}`} id={detailsId}>
+          {provenance.map(([term, detail]) => (
+            <Fragment key={term}>
+              <dt className="text-xs font-semibold text-ink-soft sm:pt-0.5">{term}</dt>
+              <dd className="min-w-0 text-ink">{detail}</dd>
+            </Fragment>
+          ))}
+        </dl>
       </div>
     </article>
   );
@@ -87,51 +138,81 @@ export function ResultCard({ result, rank, onTrackClick }: { result: SearchResul
 
 export function ResultsSkeleton() {
   return (
-    <div aria-label="Loading search results" className="space-y-3" role="status">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div className="card animate-pulse p-5" key={index}>
-          <div className="h-3 w-28 rounded bg-slate-100" />
-          <div className="mt-3 h-5 w-2/3 rounded bg-slate-100" />
-          <div className="mt-3 h-3 w-full rounded bg-slate-100" />
-          <div className="mt-2 h-3 w-5/6 rounded bg-slate-100" />
+    <div aria-label="Loading search results" role="status">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 border-t border-rule py-5 first:border-t-0 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-4" key={index}>
+          <div className="skeleton ml-auto mt-1 h-4 w-4" />
+          <div>
+            <div className="skeleton h-4 w-40" />
+            <div className="skeleton mt-3 h-6 w-3/5" />
+            <div className="skeleton mt-2 h-3.5 w-2/5" />
+            <div className="skeleton mt-3 h-3.5 w-full max-w-prose" />
+            <div className="skeleton mt-2 h-3.5 w-4/5 max-w-prose" />
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-export function SearchEmptyState({ query, suggestions, onSearch }: { query: string; suggestions?: string[]; onSearch: (query: string) => void }) {
+export function SearchPrompt({ sourceName, samples, onSearch }: { sourceName?: string; samples: string[]; onSearch: (query: string) => void }) {
   return (
-    <div className="panel px-6 py-12 text-center">
-      <SearchX aria-hidden className="mx-auto h-8 w-8 text-slate-400" />
-      <h2 className="mt-4 text-base font-semibold text-ink">{query ? "No matching documentation" : "Search official developer documentation"}</h2>
-      <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-muted">{query ? `No results matched “${query}”. Broaden the query or remove a filter.` : "Search across MDN, React, Next.js, TypeScript, and PostgreSQL from one workspace."}</p>
-      {suggestions?.length ? (
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
-          {suggestions.map((suggestion) => <button className="button-secondary min-h-9 px-3 py-1.5 text-xs" key={suggestion} onClick={() => onSearch(suggestion)} type="button">{suggestion}</button>)}
+    <div className="max-w-xl py-10">
+      <h3 className="font-display text-2xl font-medium text-ink">{sourceName ? `Ask ${sourceName} for something.` : "Ask the stacks for something."}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+        Type a term, an API name, or a few words and press Enter. Results are ranked with BM25 over each page&rsquo;s title, headings, description, and body, and every one links to the official page.
+      </p>
+      {samples.length ? (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {samples.map((sample) => <button className="button-quiet min-h-10 px-3 font-medium" key={sample} onClick={() => onSearch(sample)} type="button">{sample}</button>)}
         </div>
       ) : null}
     </div>
   );
 }
 
+export function NoResults({ query, filtered, suggestions, onSearch, onClearFilters }: { query: string; filtered: boolean; suggestions?: string[]; onSearch: (query: string) => void; onClearFilters: () => void }) {
+  return (
+    <div className="max-w-xl py-10">
+      <h3 className="font-display text-2xl font-medium text-ink [overflow-wrap:anywhere]">{query ? <>Nothing on the shelves for &ldquo;{query}&rdquo;.</> : "No documents match these filters."}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+        {filtered ? "The filters may be excluding the page you want. Remove them, or try a broader term." : "No indexed page contains these words, and nothing close enough to correct a typo was found. Try a broader term."}
+      </p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {filtered ? <button className="button min-h-10" onClick={onClearFilters} type="button">Clear filters</button> : null}
+        {suggestions?.map((suggestion) => <button className="button-quiet min-h-10 px-3 font-medium" key={suggestion} onClick={() => onSearch(suggestion)} type="button">{suggestion}</button>)}
+      </div>
+    </div>
+  );
+}
+
 export function SearchError({ message, hasResults, onRetry }: { message: string; hasResults: boolean; onRetry: () => void }) {
   return (
-    <div className={`flex flex-col gap-3 rounded-md border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between ${hasResults ? "border-amber-200 bg-amber-50 text-amber-900" : "border-rose-200 bg-rose-50 text-rose-900"}`} role="alert">
-      <span>{message}</span>
-      <button className="button-secondary min-h-8 shrink-0 px-3 py-1 text-xs" onClick={onRetry} type="button"><RotateCcw aria-hidden className="h-3.5 w-3.5" />Retry</button>
+    <div className="notice border-bad" role="alert">
+      <TriangleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-bad" />
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">{message}</p>
+        <p className="mt-0.5 text-ink-soft">{hasResults ? "The results below are from your previous search." : "Nothing was returned. The search engine may still be loading its index."}</p>
+      </div>
+      <button className="button-quiet min-h-9 shrink-0 px-3" onClick={onRetry} type="button"><RotateCcw aria-hidden className="h-3.5 w-3.5" />Try again</button>
     </div>
   );
 }
 
 export function Pagination({ response, page, onPageChange }: { response: SearchResponse; page: number; onPageChange: (page: number) => void }) {
   const totalPages = Math.max(1, Math.ceil(response.totalHits / response.limit));
-  if (response.totalHits <= response.limit) return null;
+  if (totalPages <= 1) return null;
+  const first = (page - 1) * response.limit + 1;
+  const last = Math.min(page * response.limit, response.totalHits);
   return (
-    <nav aria-label="Search results pages" className="flex items-center justify-between border-t border-line pt-4">
-      <button className="button-secondary px-3" disabled={page <= 1} onClick={() => onPageChange(page - 1)} type="button"><ChevronLeft aria-hidden className="h-4 w-4" />Previous</button>
-      <span className="text-sm text-muted">Page <strong className="font-semibold text-ink">{page}</strong> of {totalPages}</span>
-      <button className="button-secondary px-3" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} type="button">Next<ChevronRight aria-hidden className="h-4 w-4" /></button>
+    <nav aria-label="Search results pages" className="flex items-center justify-between gap-3 border-t border-rule-strong pt-4">
+      <button aria-label="Previous page" className="button-quiet px-3" disabled={page <= 1} onClick={() => onPageChange(page - 1)} type="button"><ArrowLeft aria-hidden className="h-4 w-4" /><span className="hidden sm:inline">Previous</span></button>
+      <p className="text-center text-sm text-ink-soft">
+        <span className="font-mono text-xs">{first.toLocaleString("en-US")}–{last.toLocaleString("en-US")}</span> of {response.totalHits.toLocaleString("en-US")}
+        <span className="mx-2 text-rule-strong" aria-hidden>·</span>
+        Page <strong className="font-semibold text-ink">{page}</strong> of {totalPages.toLocaleString("en-US")}
+      </p>
+      <button aria-label="Next page" className="button-quiet px-3" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} type="button"><span className="hidden sm:inline">Next</span><ArrowRight aria-hidden className="h-4 w-4" /></button>
     </nav>
   );
 }

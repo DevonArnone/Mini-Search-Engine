@@ -2,49 +2,176 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  The stacks: uncoated paper, near-black ink, and five bookcloths.
+  Every color is defined once here, per theme, as RGB channels.
+*/
 :root {
   color-scheme: light;
   --header-height: 3.75rem;
+
+  --paper: 244 239 230;
+  --paper-raised: 251 248 242;
+  --paper-sunk: 234 227 214;
+  --ink: 27 23 20;
+  --ink-soft: 76 66 57;
+  --ink-faint: 104 93 81;
+  --rule: 216 207 191;
+  --rule-strong: 176 164 144;
+  --marker: 247 220 132;
+  --focus: 27 77 196;
+  --ok: 37 99 52;
+  --warn: 138 82 0;
+  --bad: 158 39 31;
+  --shadow: 60 44 24;
+
+  /* Bookcloth per source: the cloth, the ink stamped on it, and the cloth
+     color darkened or lightened enough to be read as text on paper. */
+  --cloth-mdn: 142 42 43;
+  --cloth-mdn-ink: 251 246 234;
+  --cloth-mdn-text: 142 42 43;
+  --cloth-react: 15 104 96;
+  --cloth-react-ink: 251 246 234;
+  --cloth-react-text: 13 94 87;
+  --cloth-nextjs: 42 38 35;
+  --cloth-nextjs-ink: 251 246 234;
+  --cloth-nextjs-text: 42 38 35;
+  --cloth-typescript: 36 80 184;
+  --cloth-typescript-ink: 251 246 234;
+  --cloth-typescript-text: 33 72 168;
+  --cloth-postgresql: 138 94 16;
+  --cloth-postgresql-ink: 251 246 234;
+  --cloth-postgresql-text: 122 82 10;
+
+  --cloth: var(--ink);
+  --cloth-ink: var(--paper);
+  --cloth-text: var(--ink);
 }
 
-* {
-  box-sizing: border-box;
+/* The reading room at night. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: 21 18 16;
+  --paper-raised: 30 26 23;
+  --paper-sunk: 14 12 10;
+  --ink: 241 233 220;
+  --ink-soft: 201 190 173;
+  --ink-faint: 161 150 134;
+  --rule: 52 45 39;
+  --rule-strong: 92 81 70;
+  --marker: 104 78 12;
+  --focus: 138 172 255;
+  --ok: 126 196 138;
+  --warn: 232 176 86;
+  --bad: 240 134 122;
+  --shadow: 0 0 0;
+
+  --cloth-mdn: 172 58 58;
+  --cloth-mdn-ink: 251 246 234;
+  --cloth-mdn-text: 236 142 134;
+  --cloth-react: 16 112 102;
+  --cloth-react-ink: 251 246 234;
+  --cloth-react-text: 96 200 186;
+  --cloth-nextjs: 221 211 196;
+  --cloth-nextjs-ink: 27 23 20;
+  --cloth-nextjs-text: 221 211 196;
+  --cloth-typescript: 44 92 204;
+  --cloth-typescript-ink: 251 246 234;
+  --cloth-typescript-text: 148 180 248;
+  --cloth-postgresql: 136 94 16;
+  --cloth-postgresql-ink: 251 246 234;
+  --cloth-postgresql-text: 226 182 92;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  min-height: 100vh;
-  background: #f5f7f8;
-  color: #172126;
-}
-
-button,
-input,
-select {
-  font: inherit;
-}
-
-mark,
-em {
-  border-radius: 0.2rem;
-  background: #dff3ef;
-  color: inherit;
-  font-style: normal;
-  font-weight: 600;
-}
-
-::selection {
-  background: #bfe7e0;
-  color: #172126;
-}
+[data-source="mdn"] { --cloth: var(--cloth-mdn); --cloth-ink: var(--cloth-mdn-ink); --cloth-text: var(--cloth-mdn-text); }
+[data-source="react"] { --cloth: var(--cloth-react); --cloth-ink: var(--cloth-react-ink); --cloth-text: var(--cloth-react-text); }
+[data-source="nextjs"] { --cloth: var(--cloth-nextjs); --cloth-ink: var(--cloth-nextjs-ink); --cloth-text: var(--cloth-nextjs-text); }
+[data-source="typescript"] { --cloth: var(--cloth-typescript); --cloth-ink: var(--cloth-typescript-ink); --cloth-text: var(--cloth-typescript-text); }
+[data-source="postgresql"] { --cloth: var(--cloth-postgresql); --cloth-ink: var(--cloth-postgresql-ink); --cloth-text: var(--cloth-postgresql-text); }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: rgb(var(--paper));
+    scrollbar-color: rgb(var(--rule-strong)) rgb(var(--paper));
+    scrollbar-width: thin;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
+    font-feature-settings: "kern", "liga";
+    caret-color: rgb(var(--focus));
+  }
+
+  ::selection {
+    background: rgb(var(--marker));
+    color: rgb(var(--ink));
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 2px solid rgb(var(--paper));
+    border-radius: 9999px;
+    background: rgb(var(--rule-strong));
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  /* Highlighted query terms: a marker pen over the text. */
+  mark {
+    padding: 0 0.1em;
+    border-radius: 1px;
+    background: rgb(var(--marker));
+    color: rgb(var(--ink));
+    font-weight: inherit;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
   :focus-visible {
-    outline: 2px solid #0c766e;
+    outline: 2px solid rgb(var(--focus));
     outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Measurements line up in columns wherever mono is used. */
+  .font-mono,
+  code,
+  kbd {
+    font-variant-numeric: tabular-nums;
+    font-variant-ligatures: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -60,68 +187,89 @@ em {
 }
 
 @layer components {
-  .app-shell {
-    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8;
+  .page {
+    @apply mx-auto w-full max-w-page px-4 sm:px-6 lg:px-10;
   }
 
-  .section-shell {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  /* Display headings: Fraunces, tight, optical size following the font size. */
+  .display {
+    @apply font-display font-medium text-ink;
+    font-optical-sizing: auto;
+    letter-spacing: -0.022em;
+    line-height: 1.02;
   }
 
-  .page-shell {
-    @apply app-shell py-6 sm:py-8;
+  .title {
+    @apply font-display text-2xl font-medium text-ink sm:text-3xl;
+    letter-spacing: -0.015em;
   }
 
-  .page-heading {
-    @apply text-2xl font-semibold leading-tight text-ink sm:text-3xl;
+  .heading {
+    @apply font-display text-xl font-medium text-ink;
+    letter-spacing: -0.01em;
   }
 
-  .section-heading {
-    @apply text-lg font-semibold leading-tight text-ink sm:text-xl;
+  /* Field and column labels. Sentence case, never tracked-out capitals. */
+  .label {
+    @apply text-xs font-semibold text-ink-soft;
   }
 
-  .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.12em] text-teal-700;
+  .measure {
+    @apply font-mono text-xs text-ink-soft;
   }
 
-  .panel {
-    @apply rounded-lg border border-line bg-white shadow-panel;
+  .rule-t {
+    @apply border-t border-rule;
   }
 
-  .card {
-    @apply rounded-lg border border-line bg-white shadow-card;
+  .button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-ink bg-ink px-4 text-sm font-semibold text-paper transition-colors duration-150 hover:bg-ink-soft active:translate-y-px disabled:pointer-events-none disabled:opacity-45;
+    border-radius: 2px;
   }
 
-  .card-interactive {
-    @apply transition-colors duration-150 hover:border-teal-300 hover:bg-teal-50/30;
+  .button-quiet {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-rule-strong bg-transparent px-4 text-sm font-semibold text-ink transition-colors duration-150 hover:border-ink hover:bg-paper-raised active:translate-y-px disabled:pointer-events-none disabled:opacity-45;
+    border-radius: 2px;
   }
 
-  .button-primary {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 disabled:pointer-events-none disabled:opacity-50;
-  }
-
-  .button-secondary {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-line-strong bg-white px-4 py-2 text-sm font-semibold text-ink shadow-sm transition-colors hover:border-teal-400 hover:bg-teal-50 disabled:pointer-events-none disabled:opacity-50;
-  }
-
-  .button-ghost {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-slate-100 hover:text-ink disabled:pointer-events-none disabled:opacity-50;
+  .button-bare {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 px-2 text-sm font-medium text-ink-soft underline decoration-rule-strong transition-colors duration-150 hover:text-ink hover:decoration-ink disabled:pointer-events-none disabled:opacity-45;
   }
 
   .icon-button {
-    @apply inline-grid h-10 w-10 place-items-center rounded-md border border-transparent text-muted transition-colors hover:border-line hover:bg-white hover:text-ink;
+    @apply inline-grid h-11 w-11 shrink-0 place-items-center text-ink-soft transition-colors duration-150 hover:bg-paper-sunk hover:text-ink;
+    border-radius: 2px;
   }
 
-  .control {
-    @apply min-h-10 rounded-md border border-line-strong bg-white px-3 text-sm text-ink shadow-sm outline-none transition-colors placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100;
+  .field {
+    @apply min-h-11 border border-rule-strong bg-paper-raised px-3 text-sm text-ink transition-colors duration-150 placeholder:text-ink-faint hover:border-ink-faint focus:border-ink;
+    border-radius: 2px;
   }
 
-  .badge {
-    @apply inline-flex min-h-5 items-center gap-1 rounded px-2 py-0.5 text-xs font-medium;
+  .link {
+    @apply underline decoration-rule-strong transition-colors duration-150 hover:decoration-ink;
   }
 
-  .status-dot {
-    @apply inline-block h-2 w-2 shrink-0 rounded-full;
+  /* A removable filter tab. */
+  .chip {
+    @apply inline-flex min-h-8 items-center gap-1 border border-rule-strong bg-paper-raised pl-2.5 text-xs font-medium text-ink;
+    border-radius: 2px;
+  }
+
+  /* A source's cloth swatch, used as its mark everywhere. */
+  .cloth-mark {
+    @apply inline-grid shrink-0 place-items-center bg-cloth font-mono font-semibold text-cloth-ink;
+    border-radius: 1px;
+  }
+
+  .notice {
+    @apply flex items-start gap-3 border border-rule-strong bg-paper-raised px-4 py-3 text-sm text-ink;
+    border-radius: 2px;
+  }
+
+  .skeleton {
+    @apply animate-pulse bg-paper-sunk;
+    border-radius: 2px;
   }
 
   .data-table {
@@ -129,46 +277,16 @@ em {
   }
 
   .data-table th {
-    @apply border-b border-line bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] text-muted;
+    @apply border-b border-rule-strong px-3 py-2 text-xs font-semibold text-ink-soft first:pl-0 last:pr-0;
   }
 
-  .data-table td {
-    @apply border-b border-line px-4 py-3 align-middle last:border-b-0;
+  .data-table td,
+  .data-table tbody th {
+    @apply border-b border-rule px-3 py-2.5 text-left align-baseline text-sm font-medium text-ink first:pl-0 last:pr-0;
   }
 
-  /* Compatibility aliases while route surfaces migrate to the workbench system. */
-  .premium-card,
-  .metric-card,
-  .glass-panel {
-    @apply panel;
-  }
-
-  .premium-card-hover {
-    @apply card-interactive;
-  }
-
-  .btn-primary {
-    @apply button-primary;
-  }
-
-  .btn-secondary {
-    @apply button-secondary;
-  }
-
-  .input-premium {
-    @apply control;
-  }
-
-  .chip,
-  .status-pill {
-    @apply badge border border-line bg-white text-muted;
-  }
-
-  .section-kicker {
-    @apply eyebrow;
-  }
-
-  .table-premium {
-    @apply overflow-hidden rounded-lg border border-line bg-white;
+  .data-table tbody tr:last-child td,
+  .data-table tbody tr:last-child th {
+    @apply border-b-0;
   }
 }

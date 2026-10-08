@@ -43,9 +43,5 @@ export function HomeSearch() {
     router.push(`/search?q=${encodeURIComponent(value)}`);
   }
 
-  return (
-    <div className="panel p-2 shadow-panel">
-      <SearchInput onChange={setQuery} onSubmit={submit} suggestions={suggestions} suggestionsLoading={loading} value={query} />
-    </div>
-  );
+  return <SearchInput onChange={setQuery} onSubmit={submit} placeholder="useEffect cleanup, CSS subgrid, window functions…" size="lg" suggestions={suggestions} suggestionsLoading={loading} value={query} />;
 }
