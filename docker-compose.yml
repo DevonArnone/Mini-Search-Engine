@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: mini_search
       POSTGRES_PASSWORD: mini_search
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,7 +15,10 @@ services:
       timeout: 5s
       retries: 5
 
+  # Optional comparison engine. Start it with `docker compose --profile meilisearch up`
+  # and set SEARCH_BACKEND=meilisearch (web) and INDEX_TARGETS=native,meilisearch (crawler).
   meilisearch:
+    profiles: ["meilisearch"]
     image: getmeili/meilisearch:v1.11
     environment:
       MEILI_MASTER_KEY: mini_search_master_key
@@ -25,12 +28,16 @@ services:
     volumes:
       - meili_data:/meili_data
 
+  # A long-running Node server: the search engine keeps its index in memory in
+  # a worker thread and reads published batches from the shared volume.
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
       DATABASE_URL: postgresql://mini_search:mini_search@postgres:5432/mini_search
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-native}
+      SEARCH_INDEX_DIR: /data/search-index
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: mini_search_master_key
       SEARCH_DEMO_MODE: "false"
@@ -38,10 +45,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      meilisearch:
-        condition: service_started
     ports:
       - "3000:3000"
+    volumes:
+      - search_index:/data/search-index:ro
 
   crawler-job:
     build:
@@ -50,6 +57,8 @@ services:
       - .env.example
     environment:
       DATABASE_URL: postgresql://mini_search:mini_search@postgres:5432/mini_search
+      SEARCH_INDEX_DIR: /data/search-index
+      INDEX_TARGETS: ${INDEX_TARGETS:-native}
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: mini_search_master_key
       CRAWLER_IGNORE_ROBOTS: "false"
@@ -57,15 +66,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      meilisearch:
-        condition: service_started
+    volumes:
+      - search_index:/data/search-index
     command:
       [
         "sh",
         "-c",
-        "python scripts/init_db.py && python scripts/init_index.py && python scripts/load_seeds.py && python scripts/run_crawl.py"
+        "python scripts/init_db.py && python scripts/load_seeds.py && python scripts/run_crawl.py"
       ]
 
 volumes:
   postgres_data:
   meili_data:
+  search_index:

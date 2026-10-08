@@ -1,22 +1,36 @@
+"""Generate the deterministic synthetic index fixture.
+
+This is test data, not a crawl. It exists so integration tests and local
+experiments have a fixed 10K-document index whose contents never change.
+It is written to its own index directory, touches neither PostgreSQL nor the
+real index, and every document is labeled as synthetic. It must not be used
+as evidence of crawl scale.
+
+    python scripts/generate_demo_corpus.py --count 10000
+    SEARCH_INDEX_DIR=data/search-index-synthetic npm run start
+"""
+
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from datetime import datetime, timedelta, timezone
-from hashlib import sha256
-from itertools import islice
-from pathlib import Path, PurePosixPath
-from typing import Iterable
-from uuid import uuid4
+from typing import Iterator
+from uuid import NAMESPACE_URL, uuid5
+
+from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.db.connection import get_connection
-from app.indexer.meili import batch_index
+from app.indexer.native import NativeIndexWriter, upsert_operation
 
+DEFAULT_OUT = Path(__file__).resolve().parents[3] / "data" / "search-index-synthetic"
+
+SOURCE_SLUG = "synthetic"
+SOURCE_NAME = "Synthetic fixture"
 
 DOMAINS = (
     "docs.synthetic.local",
@@ -37,7 +51,7 @@ TOPICS = (
 )
 
 TOPIC_TAGS = {
-    "search-ranking": ["ranking", "relevance", "meilisearch"],
+    "search-ranking": ["ranking", "relevance", "bm25"],
     "crawler-design": ["crawler", "python", "queues"],
     "index-maintenance": ["indexing", "etl", "operations"],
     "frontend-search": ["nextjs", "typescript", "ux"],
@@ -47,211 +61,84 @@ TOPIC_TAGS = {
     "metadata-storage": ["postgres", "schema", "storage"],
 }
 
+CONTENT_TYPES = ("guide", "reference", "tutorial")
 LANGUAGES = ("en", "en", "en", "es")
 BASE_PUBLISHED_AT = datetime(2025, 1, 1, tzinfo=timezone.utc)
 
 
-def batched(values: Iterable[int], size: int) -> Iterable[list[int]]:
-    iterator = iter(values)
-    while batch := list(islice(iterator, size)):
-        yield batch
-
-
-def build_clean_text(doc_number: int, topic: str, domain: str) -> str:
+def build_body(doc_number: int, topic: str, domain: str) -> str:
     topic_label = topic.replace("-", " ")
-    paragraphs = [
-        f"Document {doc_number} covers {topic_label} for the {domain} corpus.",
-        "It describes how a crawler fetches source pages, extracts clean text, and stores metadata for retrieval.",
-        "The pipeline writes canonical URLs, language signals, publication dates, and search attributes into PostgreSQL.",
-        "A Meilisearch index serves autocomplete, faceted filtering, and ranked result retrieval for a Next.js frontend.",
-        "Synthetic content is useful for local benchmarking because it produces a stable document count without bloating the repository.",
-        "Each generated document includes headings, tags, and a realistic body length so search snippets and filters behave predictably.",
-    ]
-    return " ".join(paragraphs)
+    return " ".join(
+        [
+            f"Synthetic document {doc_number} covers {topic_label} for the {domain} fixture.",
+            "It describes how a crawler fetches source pages, extracts clean text, and stores metadata for retrieval.",
+            "The pipeline writes canonical URLs, language signals, publication dates, and search attributes into PostgreSQL.",
+            "An inverted index serves autocomplete, faceted filtering, and BM25-ranked retrieval for a Next.js frontend.",
+            "Generated content gives tests a stable document count without storing a corpus in the repository.",
+            "Each generated document includes headings, tags, and a fixed body length so snippets and filters behave predictably.",
+        ]
+    )
 
 
-def build_document(doc_number: int) -> tuple[tuple, tuple, dict[str, object]]:
+def build_document(doc_number: int) -> dict[str, object]:
     topic = TOPICS[(doc_number - 1) % len(TOPICS)]
     domain = DOMAINS[(doc_number - 1) % len(DOMAINS)]
-    language = LANGUAGES[(doc_number - 1) % len(LANGUAGES)]
-    tags = TOPIC_TAGS[topic]
-    slug = f"doc-{doc_number:05d}"
-    path = str(PurePosixPath("/") / topic / slug)
-    url = f"https://{domain}{path}"
-    title = f"{topic.replace('-', ' ').title()} Reference {doc_number}"
-    description = (
-        f"Synthetic search document {doc_number} focused on {topic.replace('-', ' ')}."
-    )
-    headings = [
-        title,
-        f"{topic.replace('-', ' ').title()} workflow",
-        "Indexing notes",
-    ]
-    links = [f"https://{domain}/{topic}/overview"]
-    clean_text = build_clean_text(doc_number, topic, domain)
-    content_hash = sha256(clean_text.encode("utf-8")).hexdigest()
+    url = f"https://{domain}/{topic}/doc-{doc_number:05d}"
+    title = f"Synthetic: {topic.replace('-', ' ').title()} Reference {doc_number}"
+    body = build_body(doc_number, topic, domain)
     published_at = BASE_PUBLISHED_AT + timedelta(days=doc_number % 365)
-    boost_score = 6 + (doc_number % 5)
-    document_id = str(uuid4())
-
-    document_row = (
-        document_id,
-        url,
-        url,
-        domain,
-        path,
-        title,
-        description,
-        language,
-        published_at,
-        content_hash,
-        len(clean_text.split()),
-        "indexed",
-    )
-    content_row = (
-        document_id,
-        None,
-        clean_text,
-        json.dumps(headings),
-        json.dumps(links),
-        json.dumps({"@type": "TechArticle", "keywords": tags}),
-    )
-    index_document = {
-        "id": document_id,
+    return {
+        # Derived from the URL, so regenerating produces identical documents.
+        "id": str(uuid5(NAMESPACE_URL, url)),
         "url": url,
         "canonical_url": url,
         "domain": domain,
+        "source_slug": SOURCE_SLUG,
+        "source_name": SOURCE_NAME,
+        "content_type": CONTENT_TYPES[(doc_number - 1) % len(CONTENT_TYPES)],
+        "section_path": f"Synthetic > {topic.replace('-', ' ').title()}",
         "title": title,
-        "meta_description": description,
-        "headings": headings,
-        "body": clean_text,
-        "language": language,
+        "meta_description": f"Synthetic test document {doc_number} about {topic.replace('-', ' ')}.",
+        "headings": [title, f"{topic.replace('-', ' ').title()} workflow", "Indexing notes"],
+        "body": body,
+        "language": LANGUAGES[(doc_number - 1) % len(LANGUAGES)],
         "published_at": published_at.isoformat(),
-        "word_count": len(clean_text.split()),
-        "tags": tags,
-        "boost_score": boost_score,
+        "last_updated_at": published_at.isoformat(),
+        "word_count": len(body.split()),
+        "code_block_count": 0,
+        "tags": ["synthetic", *TOPIC_TAGS[topic]],
+        "boost_score": 6 + (doc_number % 5),
+        "authority_score": 0,
+        "freshness_status": "unknown",
     }
-    return document_row, content_row, index_document
 
 
-def seed_demo_corpus(count: int, start_at: int, batch_size: int) -> None:
-    document_numbers = range(start_at, start_at + count)
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            for batch in batched(document_numbers, batch_size):
-                document_rows = []
-                content_rows = []
-                index_documents = []
-
-                for doc_number in batch:
-                    document_row, content_row, index_document = build_document(doc_number)
-                    document_rows.append(document_row)
-                    content_rows.append(content_row)
-                    index_documents.append(index_document)
-
-                cur.executemany(
-                    """
-                    INSERT INTO documents (
-                        id, url, canonical_url, domain, path, title, meta_description, language,
-                        published_at, content_hash, word_count, status, last_crawled_at, updated_at
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                    ON CONFLICT (url) DO UPDATE SET
-                        canonical_url = EXCLUDED.canonical_url,
-                        domain = EXCLUDED.domain,
-                        path = EXCLUDED.path,
-                        title = EXCLUDED.title,
-                        meta_description = EXCLUDED.meta_description,
-                        language = EXCLUDED.language,
-                        published_at = EXCLUDED.published_at,
-                        content_hash = EXCLUDED.content_hash,
-                        word_count = EXCLUDED.word_count,
-                        status = EXCLUDED.status,
-                        last_crawled_at = NOW(),
-                        updated_at = NOW()
-                    """,
-                    document_rows,
-                )
-
-                urls = [row[1] for row in document_rows]
-                cur.execute(
-                    """
-                    SELECT id, url
-                    FROM documents
-                    WHERE url = ANY(%s)
-                    """,
-                    (urls,),
-                )
-                url_to_id = {row["url"]: str(row["id"]) for row in cur.fetchall()}
-
-                resolved_content_rows = []
-                resolved_index_documents = []
-                for document_row, content_row, index_document in zip(
-                    document_rows, content_rows, index_documents, strict=True
-                ):
-                    url = document_row[1]
-                    document_id = url_to_id[url]
-                    resolved_content_rows.append((document_id, *content_row[1:]))
-                    resolved_index_documents.append({**index_document, "id": document_id})
-
-                cur.executemany(
-                    """
-                    INSERT INTO document_content (
-                        document_id, raw_html, clean_text, headings, links, schema_json
-                    )
-                    VALUES (%s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb)
-                    ON CONFLICT (document_id) DO UPDATE SET
-                        raw_html = EXCLUDED.raw_html,
-                        clean_text = EXCLUDED.clean_text,
-                        headings = EXCLUDED.headings,
-                        links = EXCLUDED.links,
-                        schema_json = EXCLUDED.schema_json
-                    """,
-                    resolved_content_rows,
-                )
-                conn.commit()
-                batch_index(resolved_index_documents)
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Generate a synthetic local corpus for search demos and benchmarks."
-    )
-    parser.add_argument(
-        "--count",
-        type=int,
-        default=10_000,
-        help="Number of synthetic documents to create.",
-    )
-    parser.add_argument(
-        "--start-at",
-        type=int,
-        default=1,
-        help="Starting document number. Reuse 1 to upsert the same corpus.",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=500,
-        help="Batch size for PostgreSQL and Meilisearch writes.",
-    )
-    return parser.parse_args()
+def operations(count: int, start_at: int) -> Iterator[dict]:
+    for doc_number in range(start_at, start_at + count):
+        yield upsert_operation(build_document(doc_number))
 
 
 def main() -> None:
-    args = parse_args()
-    if args.count < 1:
-        raise SystemExit("--count must be greater than 0")
-    if args.start_at < 1:
-        raise SystemExit("--start-at must be greater than 0")
-    if args.batch_size < 1:
-        raise SystemExit("--batch-size must be greater than 0")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--count", type=int, default=10_000, help="Number of synthetic documents.")
+    parser.add_argument("--start-at", type=int, default=1, help="First document number.")
+    parser.add_argument("--out", default=str(DEFAULT_OUT), help="Index directory for the fixture.")
+    args = parser.parse_args()
+    if args.count < 1 or args.start_at < 1:
+        raise SystemExit("--count and --start-at must be greater than 0")
 
-    seed_demo_corpus(count=args.count, start_at=args.start_at, batch_size=args.batch_size)
-    end_at = args.start_at + args.count - 1
+    manifest = NativeIndexWriter(args.out).replace(operations(args.count, args.start_at))
     print(
-        "Seeded synthetic corpus "
-        f"for documents {args.start_at} through {end_at} ({args.count} total)."
+        json.dumps(
+            {
+                "fixture": "synthetic",
+                "indexDir": args.out,
+                "documents": args.count,
+                "batches": len(manifest["batches"]),
+                "generation": manifest["generation"],
+            },
+            indent=2,
+        )
     )
 
 

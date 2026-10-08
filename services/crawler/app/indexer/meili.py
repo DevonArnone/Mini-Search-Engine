@@ -132,3 +132,10 @@ def delete_documents_by_filter(filter_expression: str) -> None:
         filter=filter_expression
     )
     _wait_for_task(client, task)
+
+
+def delete_document_ids(document_ids: list[str]) -> None:
+    if not document_ids:
+        return
+    client = get_client()
+    _wait_for_task(client, client.index(settings.meili_index_name).delete_documents(ids=document_ids))

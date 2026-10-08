@@ -8,8 +8,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.core.fetcher import close_client
 from app.core.queue import requeue_stale_processing
 from app.core.settings import settings
+from app.indexer.publisher import BatchPublisher
 from app.pipeline.seeds import get_all_sources
 from app.pipeline.storage import get_source_queue_outcomes, update_source_registry
 from app.pipeline.worker import register_sources, run_worker
@@ -31,7 +33,21 @@ async def crawl() -> int:
         except NotImplementedError:
             pass
 
-    await run_worker(stop_event)
+    publisher = BatchPublisher()
+    publisher.start()
+    try:
+        # Publish anything an interrupted run stored but never got into the index.
+        resumed = await publisher.resume_pending()
+        if resumed:
+            print(f"Resuming publication of {resumed} stored documents")
+        await run_worker(stop_event, publisher, started_at)
+    finally:
+        stats = await publisher.close()
+        await close_client()
+    print(
+        f"Published {stats.published} documents in {stats.batches} batches "
+        f"({stats.deleted} deletions, {stats.failed_batches} failed batches)"
+    )
     attempted_at = datetime.now(tz=timezone.utc)
     outcomes = get_source_queue_outcomes(started_at)
     failed_sources = 0
@@ -44,7 +60,7 @@ async def crawl() -> int:
 
     if stop_event.is_set():
         return 130
-    return 1 if failed_sources else 0
+    return 1 if failed_sources or stats.failed_batches else 0
 
 
 if __name__ == "__main__":

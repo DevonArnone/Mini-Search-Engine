@@ -123,7 +123,15 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS boost_score INT NOT NULL DEFAULT 
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS authority_score FLOAT NOT NULL DEFAULT 0;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS freshness_status VARCHAR(20) NOT NULL DEFAULT 'unknown';
 
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb;
+-- Set when a document's text duplicates an already stored document.
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS duplicate_of UUID NULL;
+-- When the document last reached the native index durably.
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS index_published_at TIMESTAMP NULL;
+
 ALTER TABLE crawl_queue ADD COLUMN IF NOT EXISTS source_slug TEXT;
+-- Why an item ended as skipped or duplicate (robots, thin, canonical, content, ...).
+ALTER TABLE crawl_queue ADD COLUMN IF NOT EXISTS detail TEXT;
 ALTER TABLE source_registry ADD COLUMN IF NOT EXISTS last_successful_crawl_at TIMESTAMP NULL;
 
 ALTER TABLE search_analytics ADD COLUMN IF NOT EXISTS search_id UUID;
@@ -147,6 +155,7 @@ CREATE TABLE IF NOT EXISTS source_registry (
 );
 
 CREATE INDEX IF NOT EXISTS idx_documents_source_slug ON documents(source_slug);
+CREATE INDEX IF NOT EXISTS idx_documents_content_hash ON documents(content_hash);
 CREATE INDEX IF NOT EXISTS idx_documents_content_type ON documents(content_type);
 CREATE INDEX IF NOT EXISTS idx_crawl_queue_source_slug ON crawl_queue(source_slug);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_created_at ON search_analytics(created_at);
