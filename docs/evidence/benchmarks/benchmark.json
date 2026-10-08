@@ -1,0 +1,932 @@
+{
+  "environment": {
+    "recordedAt": "2026-10-08T16:53:16.977Z",
+    "commit": "a3b8dbf",
+    "workingTreeDirty": true,
+    "hardware": {
+      "cpu": "Apple M1 Pro",
+      "logicalCores": 10,
+      "memoryGb": 16
+    },
+    "os": "Darwin 25.6.0 arm64",
+    "versions": {
+      "node": "v25.2.1",
+      "next": "15.5.20",
+      "react": "19.2.4",
+      "postgres": "16 (Docker, localhost)"
+    },
+    "build": "LapUVaQT8eUkxtmVpxR85"
+  },
+  "parameters": {
+    "trials": 3,
+    "warmup": 100,
+    "requests": 500,
+    "concurrency": [
+      1,
+      10
+    ],
+    "queryCount": 40,
+    "queryCategories": {
+      "common": 6,
+      "rare": 6,
+      "multi-word": 8,
+      "filter": 7,
+      "pagination": 4,
+      "typo": 5,
+      "zero-results": 4
+    }
+  },
+  "sizes": [
+    {
+      "size": 1000,
+      "documents": 1000,
+      "batches": 4,
+      "trials": [
+        {
+          "cold": {
+            "serverFirstResponseMs": 988.9,
+            "searchableMs": 1048.1,
+            "engineHydrationMs": 202
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 2.968,
+                "p50": 2.899,
+                "p95": 5.009,
+                "max": 6.938
+              },
+              "engineMs": {
+                "mean": 1.05,
+                "p50": 1.047,
+                "p95": 2.645,
+                "max": 3.52
+              },
+              "throughputRps": 336.5,
+              "httpMeanMsByCategory": {
+                "common": 2.831,
+                "rare": 2.105,
+                "multi-word": 3.421,
+                "filter": 3.139,
+                "pagination": 3.858,
+                "typo": 3.345,
+                "zero-results": 1.948
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 11.866,
+                "p50": 12.153,
+                "p95": 18.159,
+                "max": 22.596
+              },
+              "engineMs": {
+                "mean": 1.098,
+                "p50": 1.029,
+                "p95": 2.754,
+                "max": 5.623
+              },
+              "throughputRps": 832.1,
+              "httpMeanMsByCategory": {
+                "common": 7.961,
+                "rare": 8.482,
+                "multi-word": 11.218,
+                "filter": 15.651,
+                "pagination": 13.335,
+                "typo": 15.199,
+                "zero-results": 12.859
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 428998656,
+            "heapUsedBytes": 36580704,
+            "externalBytes": 14559703,
+            "terms": 16868
+          },
+          "indexRevision": "g1a11c6ef94f003917.4"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 1535.7,
+            "searchableMs": 1610.5,
+            "engineHydrationMs": 938
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.362,
+                "p50": 3.112,
+                "p95": 5.657,
+                "max": 14.5
+              },
+              "engineMs": {
+                "mean": 1.098,
+                "p50": 1.081,
+                "p95": 2.715,
+                "max": 3.618
+              },
+              "throughputRps": 297.1,
+              "httpMeanMsByCategory": {
+                "common": 3.313,
+                "rare": 2.99,
+                "multi-word": 3.826,
+                "filter": 3.341,
+                "pagination": 4,
+                "typo": 3.615,
+                "zero-results": 2.124
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 13.087,
+                "p50": 12.808,
+                "p95": 22.744,
+                "max": 48.762
+              },
+              "engineMs": {
+                "mean": 1.201,
+                "p50": 1.082,
+                "p95": 2.987,
+                "max": 11.987
+              },
+              "throughputRps": 729.5,
+              "httpMeanMsByCategory": {
+                "common": 9.043,
+                "rare": 9.499,
+                "multi-word": 13.7,
+                "filter": 15.675,
+                "pagination": 14.221,
+                "typo": 16.443,
+                "zero-results": 14.305
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 386613248,
+            "heapUsedBytes": 44282960,
+            "externalBytes": 14572503,
+            "terms": 16868
+          },
+          "indexRevision": "g1a11c6ef94f003917.4"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 684.2,
+            "searchableMs": 745,
+            "engineHydrationMs": 175
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.081,
+                "p50": 2.844,
+                "p95": 5.071,
+                "max": 22.964
+              },
+              "engineMs": {
+                "mean": 1.066,
+                "p50": 1.058,
+                "p95": 2.693,
+                "max": 5.263
+              },
+              "throughputRps": 324,
+              "httpMeanMsByCategory": {
+                "common": 2.761,
+                "rare": 2.691,
+                "multi-word": 3.446,
+                "filter": 3.302,
+                "pagination": 3.952,
+                "typo": 3.401,
+                "zero-results": 1.787
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 14.087,
+                "p50": 13.016,
+                "p95": 29.082,
+                "max": 66.748
+              },
+              "engineMs": {
+                "mean": 1.217,
+                "p50": 1.065,
+                "p95": 2.911,
+                "max": 13.626
+              },
+              "throughputRps": 702.3,
+              "httpMeanMsByCategory": {
+                "common": 10.573,
+                "rare": 11.96,
+                "multi-word": 12.7,
+                "filter": 18.356,
+                "pagination": 14.83,
+                "typo": 16.81,
+                "zero-results": 14.639
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 436600832,
+            "heapUsedBytes": 50857184,
+            "externalBytes": 14560215,
+            "terms": 16868
+          },
+          "indexRevision": "g1a11c6ef94f003917.4"
+        }
+      ]
+    },
+    {
+      "size": 5000,
+      "documents": 5000,
+      "batches": 20,
+      "trials": [
+        {
+          "cold": {
+            "serverFirstResponseMs": 705.6,
+            "searchableMs": 1391.1,
+            "engineHydrationMs": 853
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.539,
+                "p50": 3.271,
+                "p95": 5.732,
+                "max": 10.26
+              },
+              "engineMs": {
+                "mean": 1.581,
+                "p50": 1.36,
+                "p95": 3.468,
+                "max": 4.934
+              },
+              "throughputRps": 282.3,
+              "httpMeanMsByCategory": {
+                "common": 2.908,
+                "rare": 2.81,
+                "multi-word": 3.876,
+                "filter": 4.073,
+                "pagination": 3.914,
+                "typo": 4.972,
+                "zero-results": 1.913
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 15.726,
+                "p50": 16.603,
+                "p95": 22.229,
+                "max": 25.659
+              },
+              "engineMs": {
+                "mean": 1.546,
+                "p50": 1.342,
+                "p95": 3.349,
+                "max": 5.421
+              },
+              "throughputRps": 628.3,
+              "httpMeanMsByCategory": {
+                "common": 11.866,
+                "rare": 9.441,
+                "multi-word": 12.751,
+                "filter": 20.473,
+                "pagination": 18.722,
+                "typo": 21.021,
+                "zero-results": 20.736
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 527695872,
+            "heapUsedBytes": 63158752,
+            "externalBytes": 65560791,
+            "terms": 44311
+          },
+          "indexRevision": "g1a11c6f2db6568c67.20"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 699.8,
+            "searchableMs": 1483.3,
+            "engineHydrationMs": 913
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 4.041,
+                "p50": 3.319,
+                "p95": 6.486,
+                "max": 74.753
+              },
+              "engineMs": {
+                "mean": 1.869,
+                "p50": 1.581,
+                "p95": 4.007,
+                "max": 17.756
+              },
+              "throughputRps": 247.3,
+              "httpMeanMsByCategory": {
+                "common": 3.017,
+                "rare": 2.628,
+                "multi-word": 4.74,
+                "filter": 5.813,
+                "pagination": 4.057,
+                "typo": 5.101,
+                "zero-results": 2.043
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 19.056,
+                "p50": 20.317,
+                "p95": 28.144,
+                "max": 38.882
+              },
+              "engineMs": {
+                "mean": 1.873,
+                "p50": 1.644,
+                "p95": 4.171,
+                "max": 7.354
+              },
+              "throughputRps": 518.5,
+              "httpMeanMsByCategory": {
+                "common": 14.154,
+                "rare": 11.579,
+                "multi-word": 16.226,
+                "filter": 24.987,
+                "pagination": 22.298,
+                "typo": 24.715,
+                "zero-results": 24.604
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 523386880,
+            "heapUsedBytes": 102091880,
+            "externalBytes": 68570051,
+            "terms": 44311
+          },
+          "indexRevision": "g1a11c6f2db6568c67.20"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 655.9,
+            "searchableMs": 1291.4,
+            "engineHydrationMs": 748
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.48,
+                "p50": 3.197,
+                "p95": 5.632,
+                "max": 8.121
+              },
+              "engineMs": {
+                "mean": 1.562,
+                "p50": 1.38,
+                "p95": 3.393,
+                "max": 4.79
+              },
+              "throughputRps": 287.2,
+              "httpMeanMsByCategory": {
+                "common": 3.032,
+                "rare": 2.705,
+                "multi-word": 3.757,
+                "filter": 3.962,
+                "pagination": 3.818,
+                "typo": 4.788,
+                "zero-results": 2.046
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 15.599,
+                "p50": 16.514,
+                "p95": 22.401,
+                "max": 24.544
+              },
+              "engineMs": {
+                "mean": 1.531,
+                "p50": 1.331,
+                "p95": 3.399,
+                "max": 4.889
+              },
+              "throughputRps": 633.7,
+              "httpMeanMsByCategory": {
+                "common": 11.512,
+                "rare": 9.082,
+                "multi-word": 12.622,
+                "filter": 20.64,
+                "pagination": 18.615,
+                "typo": 20.914,
+                "zero-results": 20.804
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 505266176,
+            "heapUsedBytes": 87410720,
+            "externalBytes": 70175033,
+            "terms": 44311
+          },
+          "indexRevision": "g1a11c6f2db6568c67.20"
+        }
+      ]
+    },
+    {
+      "size": 10001,
+      "documents": 10001,
+      "batches": 41,
+      "trials": [
+        {
+          "cold": {
+            "serverFirstResponseMs": 765.1,
+            "searchableMs": 2310.1,
+            "engineHydrationMs": 1752
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.627,
+                "p50": 3.382,
+                "p95": 5.766,
+                "max": 13.957
+              },
+              "engineMs": {
+                "mean": 1.576,
+                "p50": 1.191,
+                "p95": 3.304,
+                "max": 5.786
+              },
+              "throughputRps": 275.4,
+              "httpMeanMsByCategory": {
+                "common": 3.035,
+                "rare": 3.181,
+                "multi-word": 3.48,
+                "filter": 4.283,
+                "pagination": 4.463,
+                "typo": 4.735,
+                "zero-results": 2.261
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 15.181,
+                "p50": 15.169,
+                "p95": 21.631,
+                "max": 23.732
+              },
+              "engineMs": {
+                "mean": 1.486,
+                "p50": 1.133,
+                "p95": 3.208,
+                "max": 4.819
+              },
+              "throughputRps": 653.2,
+              "httpMeanMsByCategory": {
+                "common": 11.779,
+                "rare": 11.287,
+                "multi-word": 13.566,
+                "filter": 16.137,
+                "pagination": 17.048,
+                "typo": 20.989,
+                "zero-results": 19.734
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 560103424,
+            "heapUsedBytes": 95497040,
+            "externalBytes": 113992747,
+            "terms": 64162
+          },
+          "indexRevision": "g1a11c6f6c4b873584.41"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 653.3,
+            "searchableMs": 2253.9,
+            "engineHydrationMs": 1722
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.433,
+                "p50": 3.081,
+                "p95": 5.505,
+                "max": 12.377
+              },
+              "engineMs": {
+                "mean": 1.522,
+                "p50": 1.152,
+                "p95": 3.263,
+                "max": 5.777
+              },
+              "throughputRps": 291,
+              "httpMeanMsByCategory": {
+                "common": 2.831,
+                "rare": 3.052,
+                "multi-word": 3.269,
+                "filter": 3.888,
+                "pagination": 4.268,
+                "typo": 4.684,
+                "zero-results": 2.186
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 15.736,
+                "p50": 15.388,
+                "p95": 22.683,
+                "max": 29.531
+              },
+              "engineMs": {
+                "mean": 1.535,
+                "p50": 1.156,
+                "p95": 3.343,
+                "max": 6.224
+              },
+              "throughputRps": 630.5,
+              "httpMeanMsByCategory": {
+                "common": 12.181,
+                "rare": 12.364,
+                "multi-word": 14.381,
+                "filter": 16.336,
+                "pagination": 16.884,
+                "typo": 21.679,
+                "zero-results": 20.305
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 545406976,
+            "heapUsedBytes": 100175592,
+            "externalBytes": 142222931,
+            "terms": 64162
+          },
+          "indexRevision": "g1a11c6f6c4b873584.41"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 653.8,
+            "searchableMs": 2192,
+            "engineHydrationMs": 1674
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.352,
+                "p50": 3.078,
+                "p95": 5.269,
+                "max": 8.605
+              },
+              "engineMs": {
+                "mean": 1.526,
+                "p50": 1.136,
+                "p95": 3.182,
+                "max": 5.419
+              },
+              "throughputRps": 298,
+              "httpMeanMsByCategory": {
+                "common": 2.781,
+                "rare": 2.992,
+                "multi-word": 3.12,
+                "filter": 3.735,
+                "pagination": 4.25,
+                "typo": 4.628,
+                "zero-results": 2.21
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 14.895,
+                "p50": 14.745,
+                "p95": 21.498,
+                "max": 23.273
+              },
+              "engineMs": {
+                "mean": 1.458,
+                "p50": 1.117,
+                "p95": 3.151,
+                "max": 4.993
+              },
+              "throughputRps": 665.9,
+              "httpMeanMsByCategory": {
+                "common": 11.559,
+                "rare": 11.253,
+                "multi-word": 13.064,
+                "filter": 15.76,
+                "pagination": 16.756,
+                "typo": 20.8,
+                "zero-results": 19.444
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 506937344,
+            "heapUsedBytes": 100153304,
+            "externalBytes": 142222931,
+            "terms": 64162
+          },
+          "indexRevision": "g1a11c6f6c4b873584.41"
+        }
+      ]
+    },
+    {
+      "size": 15855,
+      "documents": 15855,
+      "batches": 64,
+      "trials": [
+        {
+          "cold": {
+            "serverFirstResponseMs": 654.3,
+            "searchableMs": 2938.5,
+            "engineHydrationMs": 2437
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 4.234,
+                "p50": 3.756,
+                "p95": 6.498,
+                "max": 63.521
+              },
+              "engineMs": {
+                "mean": 1.767,
+                "p50": 1.591,
+                "p95": 3.273,
+                "max": 15.389
+              },
+              "throughputRps": 236,
+              "httpMeanMsByCategory": {
+                "common": 3.812,
+                "rare": 3.529,
+                "multi-word": 4.21,
+                "filter": 3.999,
+                "pagination": 4.17,
+                "typo": 6.407,
+                "zero-results": 3.88
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 18.268,
+                "p50": 17.445,
+                "p95": 26.577,
+                "max": 38.088
+              },
+              "engineMs": {
+                "mean": 1.785,
+                "p50": 1.636,
+                "p95": 3.346,
+                "max": 11.213
+              },
+              "throughputRps": 542.9,
+              "httpMeanMsByCategory": {
+                "common": 15.81,
+                "rare": 15.756,
+                "multi-word": 17.169,
+                "filter": 18.387,
+                "pagination": 18.692,
+                "typo": 22.763,
+                "zero-results": 22.47
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 621346816,
+            "heapUsedBytes": 115883840,
+            "externalBytes": 195863123,
+            "terms": 80990
+          },
+          "indexRevision": "g1a11c6fb521e6b8c0.64"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 674.2,
+            "searchableMs": 2877.2,
+            "engineHydrationMs": 2369
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.547,
+                "p50": 3.468,
+                "p95": 5.199,
+                "max": 6.789
+              },
+              "engineMs": {
+                "mean": 1.664,
+                "p50": 1.558,
+                "p95": 3.19,
+                "max": 3.627
+              },
+              "throughputRps": 281.7,
+              "httpMeanMsByCategory": {
+                "common": 3.1,
+                "rare": 3.149,
+                "multi-word": 3.604,
+                "filter": 3.871,
+                "pagination": 4.033,
+                "typo": 4.707,
+                "zero-results": 2.29
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 16.602,
+                "p50": 16.475,
+                "p95": 21.838,
+                "max": 25.254
+              },
+              "engineMs": {
+                "mean": 1.626,
+                "p50": 1.55,
+                "p95": 3.124,
+                "max": 3.559
+              },
+              "throughputRps": 597.2,
+              "httpMeanMsByCategory": {
+                "common": 13.371,
+                "rare": 13.94,
+                "multi-word": 15.481,
+                "filter": 17.641,
+                "pagination": 17.524,
+                "typo": 21.184,
+                "zero-results": 20.138
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 612253696,
+            "heapUsedBytes": 137926160,
+            "externalBytes": 190659159,
+            "terms": 80990
+          },
+          "indexRevision": "g1a11c6fb521e6b8c0.64"
+        },
+        {
+          "cold": {
+            "serverFirstResponseMs": 648.9,
+            "searchableMs": 3129.6,
+            "engineHydrationMs": 2592
+          },
+          "load": [
+            {
+              "concurrency": 1,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 3.809,
+                "p50": 3.496,
+                "p95": 5.557,
+                "max": 33.281
+              },
+              "engineMs": {
+                "mean": 1.709,
+                "p50": 1.538,
+                "p95": 3.165,
+                "max": 11.483
+              },
+              "throughputRps": 262.3,
+              "httpMeanMsByCategory": {
+                "common": 3.178,
+                "rare": 3.207,
+                "multi-word": 3.814,
+                "filter": 4.84,
+                "pagination": 4.21,
+                "typo": 4.811,
+                "zero-results": 2.346
+              }
+            },
+            {
+              "concurrency": 10,
+              "requests": 500,
+              "errors": 0,
+              "httpMs": {
+                "mean": 16.817,
+                "p50": 16.755,
+                "p95": 22.247,
+                "max": 25.643
+              },
+              "engineMs": {
+                "mean": 1.65,
+                "p50": 1.531,
+                "p95": 3.177,
+                "max": 4.56
+              },
+              "throughputRps": 589.4,
+              "httpMeanMsByCategory": {
+                "common": 13.503,
+                "rare": 13.816,
+                "multi-word": 15.538,
+                "filter": 18.155,
+                "pagination": 17.777,
+                "typo": 21.603,
+                "zero-results": 20.564
+              }
+            }
+          ],
+          "memory": {
+            "serverRssBytes": 609550336,
+            "heapUsedBytes": 136026960,
+            "externalBytes": 188019583,
+            "terms": 80990
+          },
+          "indexRevision": "g1a11c6fb521e6b8c0.64"
+        }
+      ]
+    },
+    {
+      "size": 20000,
+      "unavailable": "the crawled corpus holds 15,855 documents"
+    }
+  ],
+  "acceptance": {
+    "thirtyMs": {
+      "rule": "full HTTP mean latency <= 30 ms in every warmed 10,001-document trial at concurrency 1",
+      "trialMeansMs": [
+        3.627,
+        3.433,
+        3.352
+      ],
+      "accepted": true
+    },
+    "flatAtScale": {
+      "rule": "10,001-document mean no more than 25% above the 5,000-document mean (concurrency 1, mean of trial means)",
+      "mean5kMs": 3.687,
+      "mean10kMs": 3.471,
+      "changePercent": -5.9,
+      "accepted": true
+    }
+  },
+  "removedAnalyticsRows": 14064
+}
